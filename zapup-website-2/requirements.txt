@@ -1,0 +1,90 @@
+# zapup-website-2/requirements.txt
+# System Requirements for ZapUp Classroom (Node.js/Next.js Project)
+# This is NOT a Python requirements.txt - it's a documentation file
+
+# SYSTEM REQUIREMENTS
+# ===================
+
+# Node.js Runtime
+Node.js >= 18.0.0
+
+# Package Managers (choose one)
+npm >= 8.0.0
+# OR
+yarn >= 1.22.0  
+# OR
+pnpm >= 7.0.0
+
+# # EXTERNAL SERVICES
+# # =================
+
+# # Database
+# Supabase Account (https://supabase.com)
+
+# # AI Service  
+# OpenAI API Key (https://platform.openai.com)
+
+# # ENVIRONMENT VARIABLES REQUIRED
+# # ===============================
+
+# # NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+# # NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+# # OPENAI_API_KEY=sk-your-openai-key
+
+# # MAIN DEPENDENCIES (from package.json)
+# # =====================================
+
+# # Core Framework
+# next@15.2.4
+# react@19
+# react-dom@19
+# typescript@5
+
+# # UI & Styling
+# tailwindcss@3.4.17
+# @radix-ui/react-*@various
+# lucide-react@0.454.0
+# tailwind-merge@2.5.5
+
+# # Database & API
+# @supabase/supabase-js@2.49.5
+# openai@4.98.0
+
+# # Forms & Validation
+# react-hook-form@7.54.1
+# zod@3.24.1
+# @hookform/resolvers@3.9.1
+
+# # PDF Processing
+# pdf-lib@1.17.1
+# pdf-parse@1.1.1
+# pdfjs-dist@2.16.105
+
+# # Utilities
+# class-variance-authority@0.7.1
+# clsx@2.1.1
+# date-fns@4.1.0
+# dotenv@16.5.0
+
+# # INSTALLATION COMMANDS
+# # =====================
+
+# # 1. Install Node.js dependencies:
+# #    npm install
+# #    OR yarn install  
+# #    OR pnpm install
+
+# # 2. Create .env.local file with required environment variables
+
+# # 3. Setup Supabase database using schema-fixed.sql
+
+# # 4. Run development server:
+# #    npm run dev
+# #    OR yarn dev
+# #    OR pnpm dev
+
+# # ACCESS POINTS
+# # =============
+# # Development: http://localhost:3000
+# # Classroom: http://localhost:3000/classroom  
+# # Admin: http://localhost:3000/admin/dashboard 
