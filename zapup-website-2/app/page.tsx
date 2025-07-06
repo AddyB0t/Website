@@ -48,6 +48,12 @@ export default function Home() {
           >
             Contact
           </Link>
+          <Link
+            href="/pricing"
+            className="text-gray-600 hover:text-blue-800 uppercase text-sm tracking-wider font-light"
+          >
+            Pricing
+          </Link>
           <div className="flex items-center space-x-4">
             <Link href="/sign-in">
               <Button variant="ghost" className="text-blue-800 hover:bg-blue-50 uppercase text-xs tracking-wider">

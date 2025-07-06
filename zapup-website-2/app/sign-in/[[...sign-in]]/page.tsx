@@ -4,6 +4,7 @@
 
 import { SignIn } from '@clerk/nextjs'
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
 export default function SignInPage() {
   return (
@@ -52,6 +53,11 @@ export default function SignInPage() {
           >
             Contact
           </Link>
+          <Link href="/pricing">
+            <Button variant="outline" size="sm" className="text-blue-800 border-blue-300 hover:bg-blue-50 uppercase text-xs tracking-wider">
+              Pricing
+            </Button>
+          </Link>
         </nav>
       </header>
 
@@ -82,6 +88,17 @@ export default function SignInPage() {
                     }
                   }}
                 />
+              </div>
+              
+              <div className="mt-8 text-center">
+                <p className="text-gray-600 text-sm mb-4">
+                  Want to explore our plans first?
+                </p>
+                <Link href="/pricing">
+                  <Button variant="outline" className="text-blue-800 border-blue-300 hover:bg-blue-50">
+                    View Pricing Plans
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
