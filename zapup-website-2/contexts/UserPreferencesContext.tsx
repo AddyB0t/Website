@@ -12,6 +12,8 @@ interface UserPreferences {
   schoolBoard: string
   currentClass: string
   stream?: string
+  state?: string
+  school?: string
   firstName?: string
   lastName?: string
   email?: string
@@ -33,6 +35,8 @@ const defaultPreferences: UserPreferences = {
   schoolBoard: '',
   currentClass: '',
   stream: '',
+  state: '',
+  school: '',
   firstName: '',
   lastName: '',
   email: '',
@@ -72,6 +76,8 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
           schoolBoard: dbPreferences.school_board || '',
           currentClass: dbPreferences.class_level || '',
           stream: dbPreferences.stream || '',
+          state: dbPreferences.state || '',
+          school: dbPreferences.school || '',
           firstName: dbPreferences.first_name || user.firstName || '',
           lastName: dbPreferences.last_name || user.lastName || '',
           email: dbPreferences.email || user.primaryEmailAddress?.emailAddress || '',
@@ -84,6 +90,8 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
           schoolBoard: '',
           currentClass: '',
           stream: '',
+          state: '',
+          school: '',
           firstName: user.firstName || '',
           lastName: user.lastName || '',
           email: user.primaryEmailAddress?.emailAddress || '',
@@ -123,6 +131,8 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
       const isComplete = !!(
         updated.schoolBoard && 
         updated.currentClass && 
+        updated.state &&
+        updated.school &&
         (!isStreamRequired || updated.stream)
       )
       
@@ -133,6 +143,8 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
         user_id: user.id, // Add missing user_id
         school_board: updated.schoolBoard as DBUserPreferences['school_board'],
         class_level: updated.currentClass as DBUserPreferences['class_level'],
+        state: updated.state,
+        school: updated.school,
         first_name: updated.firstName,
         last_name: updated.lastName,
         email: updated.email,
@@ -191,6 +203,8 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
     return !!(
       preferences.schoolBoard && 
       preferences.currentClass && 
+      preferences.state &&
+      preferences.school &&
       (!isStreamRequired || preferences.stream)
     )
   }

@@ -10,8 +10,9 @@ import { AppLayout } from '@/components/AppLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { User, Mail, Calendar, Settings, Edit, GraduationCap, School, Camera, Trash2, Upload } from 'lucide-react'
+import { User, Mail, Calendar, Settings, Edit, GraduationCap, School, Camera, Trash2, Upload, MapPin } from 'lucide-react'
 import { useUserPreferences } from '@/contexts/UserPreferencesContext'
+import { getStateNames, getSchoolsByState } from '@/lib/states-schools-data'
 
 export default function ProfilePage() {
   const { user, isLoaded } = useUser()
@@ -19,6 +20,8 @@ export default function ProfilePage() {
   const [selectedBoard, setSelectedBoard] = useState('')
   const [selectedClass, setSelectedClass] = useState('')
   const [selectedStream, setSelectedStream] = useState('')
+  const [selectedState, setSelectedState] = useState('')
+  const [selectedSchool, setSelectedSchool] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [isUploadingPicture, setIsUploadingPicture] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -54,6 +57,8 @@ export default function ProfilePage() {
   // Load saved preferences on mount
   useEffect(() => {
     if (!isLoading) {
+      if (preferences.state) setSelectedState(preferences.state)
+      if (preferences.school) setSelectedSchool(preferences.school)
       if (preferences.schoolBoard) setSelectedBoard(preferences.schoolBoard)
       if (preferences.currentClass) setSelectedClass(preferences.currentClass)
       if (preferences.stream) setSelectedStream(preferences.stream)
@@ -68,12 +73,35 @@ export default function ProfilePage() {
     }
   }
 
+  // Reset school when state changes
+  const handleStateChange = (value: string) => {
+    setSelectedState(value)
+    setSelectedSchool('') // Reset school selection when state changes
+    setSelectedBoard('') // Reset board selection when state changes
+  }
+
+  // Auto-fill school board when school is selected
+  const handleSchoolChange = (value: string) => {
+    setSelectedSchool(value)
+    
+    // Find the selected school and auto-fill the board
+    if (selectedState) {
+      const schools = getSchoolsByState(selectedState)
+      const selectedSchoolData = schools.find(school => school.name === value)
+      if (selectedSchoolData) {
+        setSelectedBoard(selectedSchoolData.board)
+      }
+    }
+  }
+
   const handleSavePreferences = async () => {
     setIsSaving(true)
     try {
       const newPreferences = {
         schoolBoard: selectedBoard,
         currentClass: selectedClass,
+        state: selectedState,
+        school: selectedSchool,
         ...(isStreamRequired && { stream: selectedStream })
       }
       
@@ -297,46 +325,108 @@ export default function ProfilePage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
+            <div className="mb-4">
+              <p className="text-sm text-gray-600">
+                Please complete the following steps in order:
+                <span className="ml-2 text-xs">
+                  {selectedState ? '✅' : '1️⃣'} State → 
+                  {selectedSchool ? '✅' : '2️⃣'} School → 
+                  {selectedBoard ? '✅' : '3️⃣'} Board → 
+                  {selectedClass ? '✅' : '4️⃣'} Class
+                  {isStreamRequired ? (selectedStream ? ' → ✅ Stream' : ' → 5️⃣ Stream') : ''}
+                </span>
+              </p>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* State - First Field */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <School className="w-4 h-4 inline mr-1 text-purple-600" />
-                  School Board
+                  <MapPin className="w-4 h-4 inline mr-1 text-purple-600" />
+                  State
                 </label>
-                <Select value={selectedBoard} onValueChange={setSelectedBoard}>
+                <Select value={selectedState} onValueChange={handleStateChange}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select your school board" />
+                    <SelectValue placeholder="Select your state" />
                   </SelectTrigger>
                   <SelectContent>
-                    {schoolBoards.map((board) => (
-                      <SelectItem key={board.value} value={board.value}>
-                        {board.label}
+                    {getStateNames().map((state) => (
+                      <SelectItem key={state} value={state}>
+                        {state}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <GraduationCap className="w-4 h-4 inline mr-1 text-purple-600" />
-                  Current Class
-                </label>
-                <Select value={selectedClass} onValueChange={handleClassChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select your class" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {classes.map((classItem) => (
-                      <SelectItem key={classItem.value} value={classItem.value}>
-                        {classItem.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* School - Second Field (only shows when state is selected) */}
+              {selectedState && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <School className="w-4 h-4 inline mr-1 text-purple-600" />
+                    School
+                  </label>
+                  <Select value={selectedSchool} onValueChange={handleSchoolChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select your school" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getSchoolsByState(selectedState).map((school) => (
+                        <SelectItem key={school.name} value={school.name}>
+                          {school.name} - {school.city} ({school.board})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
-              {isStreamRequired && (
+              {/* School Board - Third Field (auto-filled when school is selected) */}
+              {selectedSchool && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <School className="w-4 h-4 inline mr-1 text-purple-600" />
+                    School Board
+                    <span className="text-xs text-gray-500 ml-1">(Auto-filled)</span>
+                  </label>
+                  <Select value={selectedBoard} onValueChange={setSelectedBoard} disabled>
+                    <SelectTrigger className="w-full bg-gray-50">
+                      <SelectValue placeholder="Auto-filled from school selection" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {schoolBoards.map((board) => (
+                        <SelectItem key={board.value} value={board.value}>
+                          {board.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Current Class - Fourth Field (only shows when school board is set) */}
+              {selectedBoard && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <GraduationCap className="w-4 h-4 inline mr-1 text-purple-600" />
+                    Current Class
+                  </label>
+                  <Select value={selectedClass} onValueChange={handleClassChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select your class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {classes.map((classItem) => (
+                        <SelectItem key={classItem.value} value={classItem.value}>
+                          {classItem.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Stream - Fifth Field (only for classes 11 and 12) */}
+              {isStreamRequired && selectedClass && (
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     <GraduationCap className="w-4 h-4 inline mr-1 text-purple-600" />
@@ -362,7 +452,7 @@ export default function ProfilePage() {
               <Button 
                 onClick={handleSavePreferences}
                 className="w-full md:w-auto bg-purple-600 hover:bg-purple-700 text-white"
-                disabled={!selectedBoard || !selectedClass || (isStreamRequired && !selectedStream) || isSaving}
+                disabled={!selectedState || !selectedSchool || !selectedBoard || !selectedClass || (isStreamRequired && !selectedStream) || isSaving}
               >
                 {isSaving ? (
                   <>

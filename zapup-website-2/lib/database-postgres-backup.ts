@@ -18,6 +18,8 @@ export type UserPreferences = {
   school_board?: 'CBSE' | 'ICSE' | 'State Board' | 'IB' | 'Cambridge' | 'Other';
   class_level?: '6' | '7' | '8' | '9' | '10' | '11' | '12';
   stream?: 'Science' | 'Commerce' | 'Arts';
+  state?: string;
+  school?: string;
   profile_picture_url?: string;
   profile_picture_filename?: string;
   profile_picture_size?: number;
@@ -63,10 +65,12 @@ export const userPreferencesService = {
           school_board = COALESCE($5, school_board),
           class_level = COALESCE($6, class_level),
           stream = COALESCE($7, stream),
-          profile_picture_url = COALESCE($8, profile_picture_url),
-          profile_picture_filename = COALESCE($9, profile_picture_filename),
-          profile_picture_size = COALESCE($10, profile_picture_size),
-          profile_complete = COALESCE($11, profile_complete),
+          state = COALESCE($8, state),
+          school = COALESCE($9, school),
+          profile_picture_url = COALESCE($10, profile_picture_url),
+          profile_picture_filename = COALESCE($11, profile_picture_filename),
+          profile_picture_size = COALESCE($12, profile_picture_size),
+          profile_complete = COALESCE($13, profile_complete),
           updated_at = CURRENT_TIMESTAMP
         WHERE user_id = $1
         RETURNING *
@@ -78,6 +82,8 @@ export const userPreferencesService = {
         preferences.school_board,
         preferences.class_level,
         preferences.stream,
+        preferences.state,
+        preferences.school,
         preferences.profile_picture_url,
         preferences.profile_picture_filename,
         preferences.profile_picture_size,
@@ -93,9 +99,9 @@ export const userPreferencesService = {
       const insertResult = await client.query(`
         INSERT INTO user_preferences (
           user_id, email, first_name, last_name, school_board, 
-          class_level, stream, profile_picture_url, profile_picture_filename, 
+          class_level, stream, state, school, profile_picture_url, profile_picture_filename, 
           profile_picture_size, profile_complete
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         RETURNING *
       `, [
         preferences.user_id,
@@ -105,6 +111,8 @@ export const userPreferencesService = {
         preferences.school_board,
         preferences.class_level,
         preferences.stream,
+        preferences.state,
+        preferences.school,
         preferences.profile_picture_url,
         preferences.profile_picture_filename,
         preferences.profile_picture_size,

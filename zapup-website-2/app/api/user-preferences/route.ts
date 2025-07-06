@@ -76,6 +76,8 @@ export async function DELETE(request: NextRequest) {
       school_board: undefined,
       class_level: undefined,
       stream: undefined,
+      state: undefined,
+      school: undefined,
       profile_complete: false
     });
 
