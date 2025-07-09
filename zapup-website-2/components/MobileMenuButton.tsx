@@ -42,7 +42,7 @@ export function MobileMenuButton() {
             <Link href="/#classes" className="py-2 text-gray-600 hover:text-blue-800 uppercase text-sm tracking-wider font-light">
               Classes
             </Link>
-            <Link href="/#contact" className="py-2 text-gray-600 hover:text-blue-800 uppercase text-sm tracking-wider font-light">
+            <Link href="/contact" className="py-2 text-gray-600 hover:text-blue-800 uppercase text-sm tracking-wider font-light">
               Contact
             </Link>
             <Link href="/pricing" className="py-2 text-gray-600 hover:text-blue-800 uppercase text-sm tracking-wider font-light">
