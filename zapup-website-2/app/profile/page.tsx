@@ -325,18 +325,7 @@ export default function ProfilePage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="mb-4">
-              <p className="text-sm text-gray-600">
-                Please complete the following steps in order:
-                <span className="ml-2 text-xs">
-                  {selectedState ? '✅' : '1️⃣'} State → 
-                  {selectedSchool ? '✅' : '2️⃣'} School → 
-                  {selectedBoard ? '✅' : '3️⃣'} Board → 
-                  {selectedClass ? '✅' : '4️⃣'} Class
-                  {isStreamRequired ? (selectedStream ? ' → ✅ Stream' : ' → 5️⃣ Stream') : ''}
-                </span>
-              </p>
-            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* State - First Field */}
               <div>

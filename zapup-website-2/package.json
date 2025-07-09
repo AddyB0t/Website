@@ -58,6 +58,7 @@
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
     "pdfjs-dist": "^2.16.105",
+    "razorpay": "^2.9.6",
     "react": "^19",
     "react-day-picker": "8.10.1",
     "react-dom": "^19",

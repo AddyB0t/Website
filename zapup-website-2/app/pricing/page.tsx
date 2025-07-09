@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useAuth } from '@clerk/nextjs'
@@ -416,8 +416,8 @@ export default function PricingPage() {
                 </thead>
                 <tbody>
                   {featureComparison.map((category, categoryIndex) => (
-                    <>
-                      <tr key={`category-${categoryIndex}`} className="bg-gray-25">
+                    <React.Fragment key={`category-${categoryIndex}`}>
+                      <tr className="bg-gray-25">
                         <td colSpan={5} className="p-4 font-semibold text-gray-800 bg-gray-100">
                           {category.category}
                         </td>
@@ -431,7 +431,7 @@ export default function PricingPage() {
                           <td className="p-4 text-center text-sm text-gray-600">{feature.premium}</td>
                         </tr>
                       ))}
-                    </>
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
