@@ -39,20 +39,21 @@ export default function PrivacyPolicyPage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow bg-gray-50 py-16">
+      <main className="flex-grow bg-white py-16">
         <div className="container mx-auto px-4 max-w-4xl">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
-            <p className="text-lg text-gray-600">
-              How we collect, use, and protect your personal information
-            </p>
-          </div>
+                      <div className="text-center mb-12">
+              <h1 className="text-3xl font-light text-gray-800 mb-6 tracking-wide">Privacy Policy</h1>
+              <div className="h-0.5 w-16 bg-blue-600 mx-auto mb-8"></div>
+              <p className="text-lg text-gray-600">
+                How we collect, use, and protect your personal information
+              </p>
+            </div>
 
           <div className="space-y-8">
             {/* Overview */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+                <CardTitle className="flex items-center space-x-2 text-gray-800 font-medium">
                   <Shield className="w-5 h-5 text-blue-600" />
                   <span>Privacy Overview</span>
                 </CardTitle>
@@ -74,9 +75,9 @@ export default function PrivacyPolicyPage() {
             </Card>
 
             {/* Information We Collect */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+                <CardTitle className="flex items-center space-x-2 text-gray-800 font-medium">
                   <Database className="w-5 h-5 text-blue-600" />
                   <span>Information We Collect</span>
                 </CardTitle>
@@ -114,9 +115,9 @@ export default function PrivacyPolicyPage() {
             </Card>
 
             {/* How We Use Information */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+                <CardTitle className="flex items-center space-x-2 text-gray-800 font-medium">
                   <Settings className="w-5 h-5 text-blue-600" />
                   <span>How We Use Your Information</span>
                 </CardTitle>
@@ -167,9 +168,9 @@ export default function PrivacyPolicyPage() {
             </Card>
 
             {/* Information Sharing */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+                <CardTitle className="flex items-center space-x-2 text-gray-800 font-medium">
                   <Users className="w-5 h-5 text-blue-600" />
                   <span>Information Sharing</span>
                 </CardTitle>
@@ -214,9 +215,9 @@ export default function PrivacyPolicyPage() {
             </Card>
 
             {/* Data Security */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+                <CardTitle className="flex items-center space-x-2 text-gray-800 font-medium">
                   <Lock className="w-5 h-5 text-blue-600" />
                   <span>Data Security</span>
                 </CardTitle>
@@ -253,9 +254,9 @@ export default function PrivacyPolicyPage() {
             </Card>
 
             {/* Your Rights */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+                <CardTitle className="flex items-center space-x-2 text-gray-800 font-medium">
                   <Eye className="w-5 h-5 text-blue-600" />
                   <span>Your Privacy Rights</span>
                 </CardTitle>
@@ -322,9 +323,9 @@ export default function PrivacyPolicyPage() {
             </Card>
 
             {/* Cookies & Tracking */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle>Cookies & Tracking Technologies</CardTitle>
+                <CardTitle className="text-gray-800 font-medium">Cookies & Tracking Technologies</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-gray-600">
@@ -361,9 +362,9 @@ export default function PrivacyPolicyPage() {
             </Card>
 
             {/* Children's Privacy */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle>Children's Privacy</CardTitle>
+                <CardTitle className="text-gray-800 font-medium">Children's Privacy</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 mb-4">
@@ -397,9 +398,9 @@ export default function PrivacyPolicyPage() {
             </Card>
 
             {/* Data Retention */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle>Data Retention</CardTitle>
+                <CardTitle className="text-gray-800 font-medium">Data Retention</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 mb-4">
@@ -416,9 +417,9 @@ export default function PrivacyPolicyPage() {
             </Card>
 
             {/* Updates to Policy */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle>Policy Updates</CardTitle>
+                <CardTitle className="text-gray-800 font-medium">Policy Updates</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 mb-4">
@@ -435,9 +436,9 @@ export default function PrivacyPolicyPage() {
             </Card>
 
             {/* Contact Information */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle>Contact Us</CardTitle>
+                <CardTitle className="text-gray-800 font-medium">Contact Us</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 mb-4">
@@ -470,20 +471,20 @@ export default function PrivacyPolicyPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8">
+      <footer className="bg-gray-100 py-8">
         <div className="container mx-auto px-4 text-center">
           <div className="flex justify-center space-x-6 mb-4">
-            <Link href="/terms-and-conditions" className="text-gray-400 hover:text-white">
+            <Link href="/terms-and-conditions" className="text-gray-600 hover:text-blue-800 text-sm">
               Terms & Conditions
             </Link>
-            <Link href="/cancellation-refunds" className="text-gray-400 hover:text-white">
+            <Link href="/cancellation-refunds" className="text-gray-600 hover:text-blue-800 text-sm">
               Cancellation & Refunds
             </Link>
-            <Link href="/contact" className="text-gray-400 hover:text-white">
+            <Link href="/contact" className="text-gray-600 hover:text-blue-800 text-sm">
               Contact Us
             </Link>
           </div>
-          <p className="text-gray-400">
+          <p className="text-gray-600 text-sm">
             © 2024 ZapUp Education Technologies. All rights reserved.
           </p>
         </div>

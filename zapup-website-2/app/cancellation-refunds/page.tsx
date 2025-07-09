@@ -39,10 +39,11 @@ export default function CancellationRefundsPage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow bg-gray-50 py-16">
+      <main className="flex-grow bg-white py-16">
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Cancellation & Refunds Policy</h1>
+            <h1 className="text-3xl font-light text-gray-800 mb-6 tracking-wide">Cancellation & Refunds Policy</h1>
+            <div className="h-0.5 w-16 bg-blue-600 mx-auto mb-8"></div>
             <p className="text-lg text-gray-600">
               Learn about our subscription cancellation and refund policies
             </p>
@@ -50,9 +51,9 @@ export default function CancellationRefundsPage() {
 
           <div className="space-y-8">
             {/* Overview */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+                <CardTitle className="flex items-center space-x-2 text-gray-800 font-medium">
                   <RefreshCw className="w-5 h-5 text-blue-600" />
                   <span>Policy Overview</span>
                 </CardTitle>
@@ -70,9 +71,9 @@ export default function CancellationRefundsPage() {
             </Card>
 
             {/* Subscription Cancellation */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle>Subscription Cancellation</CardTitle>
+                <CardTitle className="text-gray-800 font-medium">Subscription Cancellation</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -98,9 +99,9 @@ export default function CancellationRefundsPage() {
             </Card>
 
             {/* Refund Policy */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle>Refund Policy</CardTitle>
+                <CardTitle className="text-gray-800 font-medium">Refund Policy</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
@@ -163,9 +164,9 @@ export default function CancellationRefundsPage() {
             </Card>
 
             {/* Processing Times */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+                <CardTitle className="flex items-center space-x-2 text-gray-800 font-medium">
                   <Clock className="w-5 h-5 text-blue-600" />
                   <span>Processing Times</span>
                 </CardTitle>
@@ -208,9 +209,9 @@ export default function CancellationRefundsPage() {
             </Card>
 
             {/* Special Circumstances */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle>Special Circumstances</CardTitle>
+                <CardTitle className="text-gray-800 font-medium">Special Circumstances</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -242,9 +243,9 @@ export default function CancellationRefundsPage() {
             </Card>
 
             {/* Contact Information */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle>Need Help?</CardTitle>
+                <CardTitle className="text-gray-800 font-medium">Need Help?</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 mb-4">
@@ -270,20 +271,20 @@ export default function CancellationRefundsPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8">
+      <footer className="bg-gray-100 py-8">
         <div className="container mx-auto px-4 text-center">
           <div className="flex justify-center space-x-6 mb-4">
-            <Link href="/privacy-policy" className="text-gray-400 hover:text-white">
+            <Link href="/privacy-policy" className="text-gray-600 hover:text-blue-800 text-sm">
               Privacy Policy
             </Link>
-            <Link href="/terms-and-conditions" className="text-gray-400 hover:text-white">
+            <Link href="/terms-and-conditions" className="text-gray-600 hover:text-blue-800 text-sm">
               Terms & Conditions
             </Link>
-            <Link href="/contact" className="text-gray-400 hover:text-white">
+            <Link href="/contact" className="text-gray-600 hover:text-blue-800 text-sm">
               Contact Us
             </Link>
           </div>
-          <p className="text-gray-400">
+          <p className="text-gray-600 text-sm">
             © 2024 ZapUp Education Technologies. All rights reserved.
           </p>
         </div>

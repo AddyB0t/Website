@@ -39,20 +39,21 @@ export default function TermsAndConditionsPage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow bg-gray-50 py-16">
+      <main className="flex-grow bg-white py-16">
         <div className="container mx-auto px-4 max-w-4xl">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Terms and Conditions</h1>
-            <p className="text-lg text-gray-600">
-              Legal terms governing your use of ZapUp services
-            </p>
-          </div>
+                      <div className="text-center mb-12">
+              <h1 className="text-3xl font-light text-gray-800 mb-6 tracking-wide">Terms and Conditions</h1>
+              <div className="h-0.5 w-16 bg-blue-600 mx-auto mb-8"></div>
+              <p className="text-lg text-gray-600">
+                Legal terms governing your use of ZapUp services
+              </p>
+            </div>
 
           <div className="space-y-8">
             {/* Overview */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+                <CardTitle className="flex items-center space-x-2 text-gray-800 font-medium">
                   <FileText className="w-5 h-5 text-blue-600" />
                   <span>Agreement Overview</span>
                 </CardTitle>
@@ -73,9 +74,9 @@ export default function TermsAndConditionsPage() {
             </Card>
 
             {/* Acceptance of Terms */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+                <CardTitle className="flex items-center space-x-2 text-gray-800 font-medium">
                   <CheckCircle className="w-5 h-5 text-blue-600" />
                   <span>Acceptance of Terms</span>
                 </CardTitle>
@@ -99,9 +100,9 @@ export default function TermsAndConditionsPage() {
             </Card>
 
             {/* Services Description */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle>Our Services</CardTitle>
+                <CardTitle className="text-gray-800 font-medium">Our Services</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-gray-600">
@@ -132,9 +133,9 @@ export default function TermsAndConditionsPage() {
             </Card>
 
             {/* User Accounts */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+                <CardTitle className="flex items-center space-x-2 text-gray-800 font-medium">
                   <Users className="w-5 h-5 text-blue-600" />
                   <span>User Accounts</span>
                 </CardTitle>
@@ -166,9 +167,9 @@ export default function TermsAndConditionsPage() {
             </Card>
 
             {/* Subscription and Payment */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle>Subscription and Payment</CardTitle>
+                <CardTitle className="text-gray-800 font-medium">Subscription and Payment</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -200,9 +201,9 @@ export default function TermsAndConditionsPage() {
             </Card>
 
             {/* User Conduct */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+                <CardTitle className="flex items-center space-x-2 text-gray-800 font-medium">
                   <Scale className="w-5 h-5 text-blue-600" />
                   <span>User Conduct</span>
                 </CardTitle>
@@ -234,9 +235,9 @@ export default function TermsAndConditionsPage() {
             </Card>
 
             {/* Intellectual Property */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle>Intellectual Property</CardTitle>
+                <CardTitle className="text-gray-800 font-medium">Intellectual Property</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -272,9 +273,9 @@ export default function TermsAndConditionsPage() {
             </Card>
 
             {/* Privacy and Data */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+                <CardTitle className="flex items-center space-x-2 text-gray-800 font-medium">
                   <Shield className="w-5 h-5 text-blue-600" />
                   <span>Privacy and Data Protection</span>
                 </CardTitle>
@@ -293,9 +294,9 @@ export default function TermsAndConditionsPage() {
             </Card>
 
             {/* Disclaimers */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+                <CardTitle className="flex items-center space-x-2 text-gray-800 font-medium">
                   <AlertTriangle className="w-5 h-5 text-amber-600" />
                   <span>Disclaimers</span>
                 </CardTitle>
@@ -330,9 +331,9 @@ export default function TermsAndConditionsPage() {
             </Card>
 
             {/* Limitation of Liability */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle>Limitation of Liability</CardTitle>
+                <CardTitle className="text-gray-800 font-medium">Limitation of Liability</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 mb-4">
@@ -351,9 +352,9 @@ export default function TermsAndConditionsPage() {
             </Card>
 
             {/* Indemnification */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle>Indemnification</CardTitle>
+                <CardTitle className="text-gray-800 font-medium">Indemnification</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600">
@@ -365,9 +366,9 @@ export default function TermsAndConditionsPage() {
             </Card>
 
             {/* Governing Law */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle>Governing Law and Jurisdiction</CardTitle>
+                <CardTitle className="text-gray-800 font-medium">Governing Law and Jurisdiction</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 mb-4">
@@ -383,9 +384,9 @@ export default function TermsAndConditionsPage() {
             </Card>
 
             {/* Changes to Terms */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle>Changes to Terms</CardTitle>
+                <CardTitle className="text-gray-800 font-medium">Changes to Terms</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 mb-4">
@@ -401,9 +402,9 @@ export default function TermsAndConditionsPage() {
             </Card>
 
             {/* Contact Information */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle>Contact Information</CardTitle>
+                <CardTitle className="text-gray-800 font-medium">Contact Information</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 mb-4">
@@ -434,20 +435,20 @@ export default function TermsAndConditionsPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8">
+      <footer className="bg-gray-100 py-8">
         <div className="container mx-auto px-4 text-center">
           <div className="flex justify-center space-x-6 mb-4">
-            <Link href="/privacy-policy" className="text-gray-400 hover:text-white">
+            <Link href="/privacy-policy" className="text-gray-600 hover:text-blue-800 text-sm">
               Privacy Policy
             </Link>
-            <Link href="/cancellation-refunds" className="text-gray-400 hover:text-white">
+            <Link href="/cancellation-refunds" className="text-gray-600 hover:text-blue-800 text-sm">
               Cancellation & Refunds
             </Link>
-            <Link href="/contact" className="text-gray-400 hover:text-white">
+            <Link href="/contact" className="text-gray-600 hover:text-blue-800 text-sm">
               Contact Us
             </Link>
           </div>
-          <p className="text-gray-400">
+          <p className="text-gray-600 text-sm">
             © 2024 ZapUp Education Technologies. All rights reserved.
           </p>
         </div>

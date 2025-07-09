@@ -48,7 +48,7 @@ export default function SignUpPage() {
             Classes
           </Link>
           <Link
-            href="/#contact"
+            href="/contact"
             className="text-gray-600 hover:text-blue-800 uppercase text-sm tracking-wider font-light"
           >
             Contact

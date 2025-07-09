@@ -41,18 +41,19 @@ export default function ContactPage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow bg-gray-50 py-16">
+      <main className="flex-grow bg-white py-16">
         <div className="container mx-auto px-4 max-w-4xl">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Contact Us</h1>
-            <p className="text-lg text-gray-600">Get in touch with us for any questions or support</p>
-          </div>
+                      <div className="text-center mb-12">
+              <h1 className="text-3xl font-light text-gray-800 mb-6 tracking-wide">Contact Us</h1>
+              <div className="h-0.5 w-16 bg-blue-600 mx-auto mb-8"></div>
+              <p className="text-lg text-gray-600">Get in touch with us for any questions or support</p>
+            </div>
 
           <div className="grid md:grid-cols-2 gap-8">
             {/* Contact Information */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+                <CardTitle className="flex items-center space-x-2 text-gray-800 font-medium">
                   <MessageCircle className="w-5 h-5 text-blue-600" />
                   <span>Get in Touch</span>
                 </CardTitle>
@@ -104,9 +105,9 @@ export default function ContactPage() {
             </Card>
 
             {/* Quick Links */}
-            <Card>
+            <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle>Quick Links</CardTitle>
+                <CardTitle className="text-gray-800 font-medium">Quick Links</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -153,9 +154,9 @@ export default function ContactPage() {
           </div>
 
           {/* Company Information */}
-          <Card className="mt-8">
+          <Card className="mt-8 bg-white shadow-sm hover:shadow-md transition-shadow">
             <CardHeader>
-              <CardTitle>About ZapUp</CardTitle>
+              <CardTitle className="text-gray-800 font-medium">About ZapUp</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
@@ -163,29 +164,15 @@ export default function ContactPage() {
                 empowering students through innovative digital learning solutions. We provide comprehensive 
                 educational resources for classes 6-12, covering all major subjects and boards.
               </p>
-              <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-600">
-                <div>
-                  <strong>Company Registration:</strong> ZapUp Education Technologies Pvt. Ltd.
-                </div>
-                <div>
-                  <strong>CIN:</strong> U72900DL2023PTC123456
-                </div>
-                <div>
-                  <strong>GST Number:</strong> 06AABCU9603R1ZM
-                </div>
-                <div>
-                  <strong>Founded:</strong> 2023
-                </div>
-              </div>
             </CardContent>
           </Card>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8">
+      <footer className="bg-gray-100 py-8">
         <div className="container mx-auto px-4 text-center">
-          <p className="text-gray-400">
+          <p className="text-gray-600 text-sm">
             © 2024 ZapUp Education Technologies. All rights reserved.
           </p>
         </div>

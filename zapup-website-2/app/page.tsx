@@ -43,7 +43,7 @@ export default function Home() {
             Classes
           </Link>
           <Link
-            href="#contact"
+            href="/contact"
             className="text-gray-600 hover:text-blue-800 uppercase text-sm tracking-wider font-light"
           >
             Contact
@@ -514,7 +514,7 @@ export default function Home() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="#contact" className="text-gray-600 hover:text-blue-800 text-sm">
+                  <Link href="/contact" className="text-gray-600 hover:text-blue-800 text-sm">
                     Contact
                   </Link>
                 </li>
@@ -550,28 +550,34 @@ export default function Home() {
             <div>
               <h3 className="text-gray-800 font-medium mb-4 uppercase text-sm tracking-wider">Contact</h3>
               <address className="not-italic text-gray-600 text-sm">
-                <p>123 Education Street</p>
-                <p>New Delhi, 110001</p>
-                <p className="mt-2">info@zapup.com</p>
-                <p>+91 98765 43210</p>
+                <p>123 Innovation Hub</p>
+                <p>Sector 18, Gurugram</p>
+                <p>Haryana 122015</p>
+                <p className="mt-2">support@zapup.org</p>
+                <p>+91 9876543210</p>
               </address>
             </div>
           </div>
 
-          <div className="border-t border-gray-200 mt-12 pt-8 text-center text-gray-600 text-sm">
-            <p>&copy; <CopyrightYear /> ZapUp Learning. All rights reserved.</p>
-          </div>
-
-          <div className="flex space-x-6">
-            <Link href="#" className="text-gray-600 hover:text-blue-800 text-sm">
-              Privacy Policy
-            </Link>
-            <Link href="#" className="text-gray-600 hover:text-blue-800 text-sm">
-              Terms of Use
-            </Link>
-            <Link href="#" className="text-gray-600 hover:text-blue-800 text-sm">
-              Support
-            </Link>
+          <div className="border-t border-gray-200 mt-12 pt-8">
+            <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+              <p className="text-gray-600 text-sm">&copy; <CopyrightYear /> ZapUp Learning. All rights reserved.</p>
+              
+              <div className="flex flex-wrap justify-center space-x-6">
+                <Link href="/privacy-policy" className="text-gray-600 hover:text-blue-800 text-sm">
+                  Privacy Policy
+                </Link>
+                <Link href="/terms-and-conditions" className="text-gray-600 hover:text-blue-800 text-sm">
+                  Terms & Conditions
+                </Link>
+                <Link href="/cancellation-refunds" className="text-gray-600 hover:text-blue-800 text-sm">
+                  Cancellation & Refunds
+                </Link>
+                <Link href="/contact" className="text-gray-600 hover:text-blue-800 text-sm">
+                  Contact Us
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </footer>
