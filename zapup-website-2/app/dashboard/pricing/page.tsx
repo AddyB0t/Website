@@ -1,12 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
+import { useUserPreferences } from '@/contexts/UserPreferencesContext'
+import { useSearchParams } from 'next/navigation'
+import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AppLayout } from '@/components/AppLayout'
 import { AuthGuard } from '@/components/AuthGuard'
+import { useRazorpay } from '@/hooks/useRazorpay'
 import { 
   Check, 
   BookOpen, 
@@ -117,11 +121,66 @@ const pricingTiers = [
 export default function DashboardPricingPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly')
   const [selectedTier, setSelectedTier] = useState<string | null>(null)
+  const { preferences } = useUserPreferences()
+  const { initiatePayment, isLoading } = useRazorpay()
+  const searchParams = useSearchParams()
+  const { toast } = useToast()
+
+  // Handle success message from payment
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      toast({
+        title: 'Payment Successful!',
+        description: 'Your subscription has been activated successfully.',
+      })
+    }
+  }, [searchParams, toast])
 
   const handleTierSelect = (tierId: string) => {
+    if (tierId === 'free') {
+      // Handle free tier separately
+      return
+    }
+
     setSelectedTier(tierId)
-    // Here you would typically redirect to payment processing
-    console.log(`Selected tier: ${tierId}`)
+    
+    // Find the selected tier
+    const tier = pricingTiers.find(t => t.id === tierId)
+    if (!tier) return
+
+    // Calculate amount based on billing cycle
+    const amount = billingCycle === 'annual' 
+      ? parseInt(tier.annualPrice?.replace('₹', '').replace(',', '') || '0')
+      : parseInt(tier.price.replace('₹', '').replace(',', '') || '0')
+
+    // Initiate payment
+    initiatePayment({
+      amount,
+      planId: tierId,
+      planName: tier.name,
+      billingCycle,
+    })
+  }
+
+  // Get current plan display name
+  const getCurrentPlanName = () => {
+    switch (preferences.subscriptionType) {
+      case 'explorer': return 'Explorer (Free)'
+      case 'scholar': return 'Scholar'
+      case 'achiever': return 'Achiever'
+      case 'genius_plus': return 'Genius+'
+      default: return 'Explorer (Free)'
+    }
+  }
+
+  const getCurrentPlanDescription = () => {
+    switch (preferences.subscriptionType) {
+      case 'explorer': return "You're currently on our free plan with basic features"
+      case 'scholar': return "You have unlimited questions for your selected class"
+      case 'achiever': return "You have access to all premium features and multi-class support"
+      case 'genius_plus': return "You have access to all features including mentor support"
+      default: return "You're currently on our free plan with basic features"
+    }
   }
 
   return (
@@ -146,8 +205,8 @@ export default function DashboardPricingPage() {
                 <div className="flex items-center space-x-3">
                   <Shield className="w-5 h-5 text-blue-600" />
                   <div>
-                    <p className="font-semibold text-blue-900">Current Plan: Explorer (Free)</p>
-                    <p className="text-sm text-blue-700">You're currently on our free plan with basic features</p>
+                    <p className="font-semibold text-blue-900">Current Plan: {getCurrentPlanName()}</p>
+                    <p className="text-sm text-blue-700">{getCurrentPlanDescription()}</p>
                   </div>
                 </div>
                 <Badge className="bg-blue-100 text-blue-800">Active</Badge>
@@ -253,9 +312,9 @@ export default function DashboardPricingPage() {
                           : ''
                     }`}
                     onClick={() => tier.id !== 'free' && handleTierSelect(tier.id)}
-                    disabled={tier.id === 'free'}
+                    disabled={tier.id === 'free' || (isLoading && selectedTier === tier.id)}
                   >
-                    {tier.buttonText}
+                    {isLoading && selectedTier === tier.id ? 'Processing...' : tier.buttonText}
                   </Button>
                 </CardHeader>
                 

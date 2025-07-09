@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Brain, BookOpen, Clock, Trophy, ChevronRight, GraduationCap, Star } from 'lucide-react'
 import { getSubjectsByClass, isStreamRequired, getSubjectDisplayName } from '@/lib/subjects'
 import { useUserPreferences } from '@/contexts/UserPreferencesContext'
+import { canAccessClass, getClassAccessRedirectUrl } from '@/lib/access-control'
 
 export default function QuestionClassPage() {
   const params = useParams()
@@ -33,8 +34,12 @@ export default function QuestionClassPage() {
       return
     }
     
-    // Check if user is trying to access their own class
-    if (classNumber !== preferences.currentClass) {
+    // Check if user can access this class based on subscription type
+    if (!canAccessClass(classNumber, {
+      currentClass: preferences.currentClass,
+      subscriptionType: preferences.subscriptionType
+    })) {
+      // Redirect to user's accessible class
       router.push(`/questions/${preferences.currentClass}`)
       return
     }

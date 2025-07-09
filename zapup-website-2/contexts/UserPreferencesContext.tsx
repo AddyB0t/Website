@@ -7,8 +7,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { userPreferencesService, UserPreferences as DBUserPreferences } from '@/lib/client-database'
+import { SubscriptionType } from "@/lib/subscriptions";
 
-interface UserPreferences {
+export interface UserPreferences {
   schoolBoard: string
   currentClass: string
   stream?: string
@@ -19,6 +20,7 @@ interface UserPreferences {
   email?: string
   profilePictureUrl?: string
   isComplete: boolean
+  subscriptionType: SubscriptionType;
 }
 
 interface UserPreferencesContextType {
@@ -41,10 +43,11 @@ const defaultPreferences: UserPreferences = {
   lastName: '',
   email: '',
   profilePictureUrl: '',
-  isComplete: false
+  isComplete: false,
+  subscriptionType: "explorer",
 }
 
-const UserPreferencesContext = createContext<UserPreferencesContextType | undefined>(undefined)
+export const UserPreferencesContext = React.createContext<UserPreferencesContextType | undefined>(undefined);
 
 export function UserPreferencesProvider({ children }: { children: React.ReactNode }) {
   const [preferences, setPreferences] = useState<UserPreferences>(defaultPreferences)
@@ -72,32 +75,18 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
       console.log('Database preferences:', dbPreferences)
       
       if (dbPreferences) {
-        setPreferences({
-          schoolBoard: dbPreferences.school_board || '',
-          currentClass: dbPreferences.class_level || '',
-          stream: dbPreferences.stream || '',
-          state: dbPreferences.state || '',
-          school: dbPreferences.school || '',
-          firstName: dbPreferences.first_name || user.firstName || '',
-          lastName: dbPreferences.last_name || user.lastName || '',
-          email: dbPreferences.email || user.primaryEmailAddress?.emailAddress || '',
-          profilePictureUrl: dbPreferences.profile_picture_url || user.imageUrl || '',
-          isComplete: dbPreferences.profile_complete
-        })
+        setPreferences(dbToContext(dbPreferences))
       } else {
         // Create initial preferences from Clerk data
         const initialPreferences = {
-          schoolBoard: '',
-          currentClass: '',
-          stream: '',
-          state: '',
-          school: '',
+          ...defaultPreferences,
           firstName: user.firstName || '',
           lastName: user.lastName || '',
           email: user.primaryEmailAddress?.emailAddress || '',
           profilePictureUrl: user.imageUrl || '',
-          isComplete: false
-        }
+          isComplete: false,
+          subscriptionType: 'explorer' as SubscriptionType,
+        };
         setPreferences(initialPreferences)
         
         console.log('Creating initial preferences:', initialPreferences)
@@ -108,8 +97,8 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
           first_name: user.firstName || '',
           last_name: user.lastName || '',
           email: user.primaryEmailAddress?.emailAddress || '',
-          profile_complete: false
-        })
+          profile_complete: false,
+        } as any)
       }
     } catch (error) {
       console.error('Error loading user preferences:', error)
@@ -139,30 +128,21 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
       updated.isComplete = isComplete
 
       // Prepare data for database - handle stream field properly
-      const dbData: any = {
-        user_id: user.id, // Add missing user_id
-        school_board: updated.schoolBoard as DBUserPreferences['school_board'],
-        class_level: updated.currentClass as DBUserPreferences['class_level'],
-        state: updated.state,
-        school: updated.school,
-        first_name: updated.firstName,
-        last_name: updated.lastName,
-        email: updated.email,
-        profile_complete: isComplete
-      }
+      const dbData = contextToDb(updated);
 
       // Only include stream if it's required and has a value
       if (isStreamRequired && updated.stream && updated.stream.trim() !== '') {
         dbData.stream = updated.stream as DBUserPreferences['stream']
       } else {
-        // For classes 6-10 or when no stream is selected, don't include stream field
+        // For classes 6-10 or when no stream is selected, remove stream field completely
         // This will keep it as NULL in the database
+        delete dbData.stream
       }
 
       console.log('Database data to save:', dbData)
 
       // Update database
-      const result = await userPreferencesService.upsertUserPreferences(dbData)
+      const result = await userPreferencesService.upsertUserPreferences(dbData as any)
 
       console.log('Database update result:', result)
 
@@ -189,8 +169,9 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
           firstName: user.firstName || '',
           lastName: user.lastName || '',
           email: user.primaryEmailAddress?.emailAddress || '',
-          profilePictureUrl: user.imageUrl || ''
-        }
+          profilePictureUrl: user.imageUrl || '',
+          subscriptionType: 'explorer' as SubscriptionType,
+        };
         setPreferences(clearedPreferences)
       }
     } catch (error) {
@@ -272,3 +253,33 @@ export function useUserPreferences() {
   }
   return context
 } 
+
+// When mapping from DB to context:
+const dbToContext = (dbPreferences: any): UserPreferences => ({
+  schoolBoard: dbPreferences.school_board || '',
+  currentClass: dbPreferences.class_level || '',
+  stream: dbPreferences.stream || '',
+  state: dbPreferences.state || '',
+  school: dbPreferences.school || '',
+  firstName: dbPreferences.first_name || '',
+  lastName: dbPreferences.last_name || '',
+  email: dbPreferences.email || '',
+  profilePictureUrl: dbPreferences.profile_picture_url || '',
+  isComplete: dbPreferences.profile_complete || false,
+  subscriptionType: (dbPreferences.subscription_type as SubscriptionType) || 'explorer',
+});
+
+// When mapping from context to DB:
+const contextToDb = (prefs: UserPreferences) => ({
+  school_board: prefs.schoolBoard,
+  class_level: prefs.currentClass,
+  stream: prefs.stream,
+  state: prefs.state,
+  school: prefs.school,
+  first_name: prefs.firstName,
+  last_name: prefs.lastName,
+  email: prefs.email,
+  profile_picture_url: prefs.profilePictureUrl,
+  profile_complete: prefs.isComplete,
+  subscription_type: prefs.subscriptionType,
+}); 

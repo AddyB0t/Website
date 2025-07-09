@@ -10,6 +10,7 @@
 - Clerk account and application (for authentication)
 - Supabase account and project (for database)
 - OpenAI API key (for AI-generated answers)
+- Razorpay account and API keys (for payment processing)
 
 ## Installation Steps
 
@@ -54,6 +55,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 # OpenAI Configuration (Get from https://platform.openai.com/api-keys)
 OPENAI_API_KEY=your-openai-api-key
 
+# Razorpay Configuration (Get from https://razorpay.com)
+RAZORPAY_KEY_ID=rzp_test_your_key_id_here
+RAZORPAY_KEY_SECRET=your_key_secret_here
+
 # Optional: Node Environment
 NODE_ENV=development
 ```
@@ -73,7 +78,14 @@ NODE_ENV=development
 3. Navigate to SQL Editor
 4. Run the `schema-fixed.sql` file contents to create the database structure
 
-### 6. Launch the Application
+### 6. Payment Setup (Razorpay)
+1. Create a Razorpay account at https://razorpay.com
+2. Complete business verification (required for live payments)
+3. Go to Settings → API Keys and generate test keys
+4. Copy the Key ID and Key Secret to your `.env.local` file
+5. For detailed setup instructions, see `RAZORPAY_SETUP.md`
+
+### 7. Launch the Application
 
 For development:
 ```bash

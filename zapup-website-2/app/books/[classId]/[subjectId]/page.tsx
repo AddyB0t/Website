@@ -5,21 +5,43 @@
 'use client'
 
 import { useParams, useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import { AppLayout } from '@/components/AppLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { BookOpen, Download, Eye, FileText, ChevronRight, ArrowLeft, ExternalLink } from 'lucide-react'
 import { getSubjectDisplayName } from '@/lib/subjects'
+import { useUserPreferences } from '@/contexts/UserPreferencesContext'
+import { canAccessClass } from '@/lib/access-control'
 
 export default function SubjectBooksPage() {
   const params = useParams()
   const router = useRouter()
+  const { preferences, isProfileComplete } = useUserPreferences()
   
   const classId = params.classId as string
   const subjectId = params.subjectId as string
   const classNumber = classId?.replace('class-', '').replace('th', '')
   const subjectName = getSubjectDisplayName(subjectId)
+
+  // Check if user can access this class
+  useEffect(() => {
+    if (!isProfileComplete()) {
+      router.push('/profile')
+      return
+    }
+    
+    // Check if user can access this class based on subscription type
+    if (!canAccessClass(classNumber, {
+      currentClass: preferences.currentClass,
+      subscriptionType: preferences.subscriptionType
+    })) {
+      // Redirect to user's accessible class
+      router.push(`/books/class-${preferences.currentClass}th`)
+      return
+    }
+  }, [classNumber, preferences, isProfileComplete, router])
 
   // Sample books data (in real app, this would come from database)
   const getBooks = () => {

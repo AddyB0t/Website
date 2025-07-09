@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { CopyrightYear } from '@/components/CopyrightYear'
 import { MobileMenuButton } from '@/components/MobileMenuButton'
 import { AppLayout } from '@/components/AppLayout'
+import { useRazorpay } from '@/hooks/useRazorpay'
 import { 
   Check, 
   Star, 
@@ -135,11 +136,11 @@ const pricingTiers = [
     annualMonthlyEquivalent: '₹436',
     annualSavings: '27%',
     badge: 'Premium',
-    badgeColor: 'bg-purple-100 text-purple-700',
+    badgeColor: 'bg-amber-100 text-amber-700',
     ideal: 'Top-performing students, exam-focused',
     icon: <Crown className="w-6 h-6" />,
-    color: 'from-purple-500 to-purple-600',
-    borderColor: 'border-purple-200',
+    color: 'from-amber-500 to-orange-600',
+    borderColor: 'border-amber-200',
     buttonVariant: 'default' as const,
     buttonText: 'Choose Genius+',
     popular: false,
@@ -195,11 +196,32 @@ export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly')
   const [selectedTier, setSelectedTier] = useState<string | null>(null)
   const { isSignedIn, isLoaded } = useAuth()
+  const { initiatePayment, isLoading } = useRazorpay()
 
   const handleTierSelect = (tierId: string) => {
+    if (tierId === 'free') {
+      // Handle free tier separately
+      return
+    }
+
     setSelectedTier(tierId)
-    // Here you would typically redirect to payment processing
-    console.log(`Selected tier: ${tierId}`)
+    
+    // Find the selected tier
+    const tier = pricingTiers.find(t => t.id === tierId)
+    if (!tier) return
+
+    // Calculate amount based on billing cycle
+    const amount = billingCycle === 'annual' 
+      ? parseInt(tier.annualPrice?.replace('₹', '').replace(',', '') || '0')
+      : parseInt(tier.price.replace('₹', '').replace(',', '') || '0')
+
+    // Initiate payment
+    initiatePayment({
+      amount,
+      planId: tierId,
+      planName: tier.name,
+      billingCycle,
+    })
   }
 
   // Always show the full marketing page for pricing
@@ -362,11 +384,14 @@ export default function PricingPage() {
                         ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md' 
                         : tier.id === 'free'
                           ? 'border-gray-300 text-gray-600 hover:bg-gray-50'
-                          : 'border-blue-200 text-blue-700 hover:bg-blue-50'
+                          : tier.id === 'premium'
+                            ? 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md border-0'
+                            : 'border-blue-200 text-blue-700 hover:bg-blue-50'
                     }`}
                     onClick={() => handleTierSelect(tier.id)}
+                    disabled={isLoading && selectedTier === tier.id}
                   >
-                    {tier.buttonText}
+                    {isLoading && selectedTier === tier.id ? 'Processing...' : tier.buttonText}
                   </Button>
                   </CardHeader>
                   

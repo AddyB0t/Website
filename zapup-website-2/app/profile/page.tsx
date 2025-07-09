@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { User, Mail, Calendar, Settings, Edit, GraduationCap, School, Camera, Trash2, Upload, MapPin } from 'lucide-react'
 import { useUserPreferences } from '@/contexts/UserPreferencesContext'
 import { getStateNames, getSchoolsByState } from '@/lib/states-schools-data'
+import { SUBSCRIPTION_FEATURES } from '@/lib/subscriptions';
 
 export default function ProfilePage() {
   const { user, isLoaded } = useUser()
@@ -50,6 +51,14 @@ export default function ProfilePage() {
     { value: 'Commerce', label: 'Commerce' },
     { value: 'Arts', label: 'Arts/Humanities' }
   ]
+
+  const features = SUBSCRIPTION_FEATURES[preferences.subscriptionType];
+  const allowedClasses = classes.filter(cls => features.allowedClasses.includes(cls.value));
+  
+  // For Scholar users, lock class selection after initial selection
+  const isScholarMode = preferences.subscriptionType === 'scholar';
+  const hasExistingClassSelection = preferences.currentClass && preferences.currentClass.trim() !== '';
+  const isClassSelectionLocked = isScholarMode && hasExistingClassSelection;
 
   // Check if stream selection is required (for classes 11 and 12)
   const isStreamRequired = selectedClass === '11' || selectedClass === '12'
@@ -398,19 +407,32 @@ export default function ProfilePage() {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     <GraduationCap className="w-4 h-4 inline mr-1 text-purple-600" />
                     Current Class
+                    {isClassSelectionLocked && (
+                      <span className="text-xs text-amber-600 ml-1">(Locked in Scholar Plan)</span>
+                    )}
                   </label>
-                  <Select value={selectedClass} onValueChange={handleClassChange}>
-                    <SelectTrigger className="w-full">
+                  <Select 
+                    value={selectedClass} 
+                    onValueChange={handleClassChange}
+                    disabled={isClassSelectionLocked ? true : undefined}
+                  >
+                    <SelectTrigger className={`w-full ${isClassSelectionLocked ? 'bg-gray-50 cursor-not-allowed' : ''}`}>
                       <SelectValue placeholder="Select your class" />
                     </SelectTrigger>
                     <SelectContent>
-                      {classes.map((classItem) => (
+                      {allowedClasses.map((classItem) => (
                         <SelectItem key={classItem.value} value={classItem.value}>
                           {classItem.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {isClassSelectionLocked && (
+                    <p className="text-xs text-amber-600 mt-1 flex items-center">
+                      <span className="mr-1">🔒</span>
+                      Class selection is locked in Scholar Plan. Upgrade to Achiever Plan to access multiple classes.
+                    </p>
+                  )}
                 </div>
               )}
 

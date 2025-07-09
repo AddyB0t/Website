@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { BookOpen, FileText, Download, Eye, ChevronRight, GraduationCap } from 'lucide-react'
 import { getSubjectsByClass, isStreamRequired, getSubjectDisplayName } from '@/lib/subjects'
 import { useUserPreferences } from '@/contexts/UserPreferencesContext'
+import { canAccessClass, getClassAccessRedirectUrl } from '@/lib/access-control'
 
 export default function BooksClassPage() {
   const params = useParams()
@@ -33,8 +34,12 @@ export default function BooksClassPage() {
       return
     }
     
-    // Check if user is trying to access their own class
-    if (classNumber !== preferences.currentClass) {
+    // Check if user can access this class based on subscription type
+    if (!canAccessClass(classNumber, {
+      currentClass: preferences.currentClass,
+      subscriptionType: preferences.subscriptionType
+    })) {
+      // Redirect to user's accessible class
       router.push(`/books/class-${preferences.currentClass}th`)
       return
     }
