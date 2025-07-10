@@ -128,10 +128,10 @@ export default function ScholasticSubjects() {
             variant="ghost"
             size="sm"
             className="text-gray-600"
-            onClick={() => router.push(`/classroom?class=${className}`)}
+            onClick={() => router.push('/')}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Classroom
+            Back to Home
           </Button>
         </div>
       </header>

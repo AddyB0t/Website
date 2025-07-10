@@ -63,7 +63,7 @@ export default function ContactPage() {
                   <Mail className="w-5 h-5 text-blue-600 mt-1" />
                   <div>
                     <h3 className="font-semibold text-gray-900">Email</h3>
-                    <p className="text-gray-600">support@zapup.org</p>
+                    <p className="text-gray-600">shaenkei@zapup.org</p>
                     <p className="text-sm text-gray-500">We'll respond within 24 hours</p>
                   </div>
                 </div>
@@ -72,7 +72,7 @@ export default function ContactPage() {
                   <Phone className="w-5 h-5 text-blue-600 mt-1" />
                   <div>
                     <h3 className="font-semibold text-gray-900">Phone</h3>
-                    <p className="text-gray-600">+91 9876543210</p>
+                    <p className="text-gray-600">+91 9163131610</p>
                     <p className="text-sm text-gray-500">Mon-Fri, 9:00 AM - 6:00 PM IST</p>
                   </div>
                 </div>
@@ -82,10 +82,9 @@ export default function ContactPage() {
                   <div>
                     <h3 className="font-semibold text-gray-900">Address</h3>
                     <p className="text-gray-600">
-                      ZapUp Education Technologies<br />
-                      123 Innovation Hub<br />
-                      Sector 18, Gurugram<br />
-                      Haryana 122015, India
+                      133 Acharya Prafulla Chandra Road<br />
+                      Block D, Kolkata<br />
+                      West Bengal 700006, India
                     </p>
                   </div>
                 </div>

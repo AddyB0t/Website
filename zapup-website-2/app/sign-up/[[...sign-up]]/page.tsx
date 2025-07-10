@@ -23,10 +23,7 @@ export default function SignUpPage() {
           </Link>
         </div>
         <nav className="hidden md:flex items-center space-x-8">
-          <Link
-            href="/#about"
-            className="text-gray-600 hover:text-blue-800 uppercase text-sm tracking-wider font-light"
-          >
+          <Link href="about" className="text-blue-800 hover:underline text-sm">
             About
           </Link>
           <Link

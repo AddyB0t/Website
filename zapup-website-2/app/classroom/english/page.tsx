@@ -121,10 +121,10 @@ export default function EnglishSubjects() {
             variant="ghost"
             size="sm"
             className="text-gray-600"
-            onClick={() => router.push(`/classroom?class=${className}`)}
+            onClick={() => router.push('/')}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Classroom
+            Back to Home
           </Button>
         </div>
       </header>
@@ -149,105 +149,9 @@ export default function EnglishSubjects() {
             ))}
           </div>
 
-          <div className="bg-gray-50 rounded-xl p-6 md:p-8 border border-gray-200">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div className="mb-4 md:mb-0">
-                <h2 className="text-xl font-medium text-gray-800 mb-2">English Resources</h2>
-                <p className="text-gray-600">
-                  Explore supplementary resources to enhance your English language and literature skills.
-                </p>
-              </div>
-              <Button className="bg-gray-400 hover:bg-gray-500 text-white">
-                View Resources
-                <ChevronRight className="w-4 h-4 ml-2" />
-              </Button>
-            </div>
-          </div>
 
-          <div className="mt-12">
-            <h2 className="text-xl font-medium text-gray-800 mb-4">Learning Tools</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 mb-4">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="w-6 h-6"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-gray-800 mb-2">Dictionary & Thesaurus</h3>
-                <p className="text-gray-600 text-sm mb-4">
-                  Look up definitions, synonyms, and antonyms to expand your vocabulary and improve your writing.
-                </p>
-                <Link href="#" className="text-gray-600 hover:text-gray-700 font-medium text-sm flex items-center">
-                  Open Dictionary
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Link>
-              </div>
 
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 mb-4">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="w-6 h-6"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-gray-800 mb-2">Video Lessons</h3>
-                <p className="text-gray-600 text-sm mb-4">
-                  Watch expert English teachers explain grammar concepts and analyze literary works.
-                </p>
-                <Link href="#" className="text-gray-600 hover:text-gray-700 font-medium text-sm flex items-center">
-                  Watch Videos
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Link>
-              </div>
 
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 mb-4">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="w-6 h-6"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-gray-800 mb-2">Essay Writing Guide</h3>
-                <p className="text-gray-600 text-sm mb-4">
-                  Learn how to write effective essays, with step-by-step guides and example essays for reference.
-                </p>
-                <Link href="#" className="text-gray-600 hover:text-gray-700 font-medium text-sm flex items-center">
-                  View Guide
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Link>
-              </div>
-            </div>
-          </div>
         </div>
       </main>
 

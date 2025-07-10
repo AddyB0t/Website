@@ -30,7 +30,7 @@ export function MobileMenuButton() {
       {isOpen && (
         <div className="absolute top-16 left-0 right-0 bg-white border-b border-gray-100 shadow-lg z-50">
           <nav className="flex flex-col p-4">
-            <Link href="/#about" className="py-2 text-gray-600 hover:text-blue-800 uppercase text-sm tracking-wider font-light">
+            <Link href="about" className="py-2 text-gray-600 hover:text-blue-800 uppercase text-sm tracking-wider font-light">
               About
             </Link>
             <Link href="/#subjects" className="py-2 text-gray-600 hover:text-blue-800 uppercase text-sm tracking-wider font-light">
