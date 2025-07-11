@@ -21,7 +21,7 @@ export interface Chapter {
 }
 
 // Base directory for Class 7th Mathematics questions
-const baseDir = 'D:\\Addy\\Client\\Questions\\Class 7th\\Mathematics'
+const baseDir = '/mnt/data/Pasia/Website/Questions/Class 7th/Mathematics'
 
 // Question chapters mapping
 const questionChapters = [

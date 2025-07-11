@@ -33,13 +33,12 @@ export default function BooksClassPage() {
       router.push('/profile')
       return
     }
-    
-    // Check if user can access this class based on subscription type
-    if (!canAccessClass(classNumber, {
-      currentClass: preferences.currentClass,
-      subscriptionType: preferences.subscriptionType
-    })) {
-      // Redirect to user's accessible class
+    // Scholar plan restriction: only allow access to selected class
+    if (
+      preferences.subscriptionType === 'scholar' &&
+      classNumber !== preferences.currentClass
+    ) {
+      // Optionally, show a toast message here if you have a toast system
       router.push(`/books/class-${preferences.currentClass}th`)
       return
     }
@@ -225,19 +224,12 @@ export default function BooksClassPage() {
         )}
 
         {/* Book Categories */}
-        {subjects.length > 0 && (
+        {subjects.length > 0 && false && (
           <Card className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Available Book Types</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {getBookTypes().map((type) => (
-                  <div key={type.id} className="text-center p-4 bg-white rounded-lg border border-gray-200">
-                    <FileText className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                    <div className="font-semibold text-gray-900">{type.name}</div>
-                    <div className="text-sm text-gray-600 mt-1">{type.description}</div>
-                    <div className="text-xs text-blue-600 mt-2">{type.count}</div>
-                  </div>
-                ))}
+                {/* Removed book type cards */}
               </div>
             </CardContent>
           </Card>

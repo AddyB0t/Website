@@ -1,31 +1,47 @@
 // zapup-website-2/app/profile/page.tsx
-// User profile page showing account information and academic preferences
-// Main landing page after login
+// User profile page with classroom-style layout
+// Shows subject cards and learning resources
 
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { AppLayout } from '@/components/AppLayout'
+import { ClassroomLayout, LearningResourcesSection } from '@/components/ClassroomLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { User, Mail, Calendar, Settings, Edit, GraduationCap, School, Camera, Trash2, Upload, MapPin } from 'lucide-react'
+import { 
+  User, 
+  Calculator, 
+  Atom, 
+  Globe, 
+  Languages, 
+  BookOpen, 
+  Laptop, 
+  Palette,
+  GraduationCap,
+  School,
+  MapPin,
+  Settings
+} from 'lucide-react'
 import { useUserPreferences } from '@/contexts/UserPreferencesContext'
 import { getStateNames, getSchoolsByState } from '@/lib/states-schools-data'
-import { SUBSCRIPTION_FEATURES } from '@/lib/subscriptions';
+import { getSubjectsByClass } from '@/lib/subjects'
+import { canAccessClass } from '@/lib/access-control'
+import Head from 'next/head'
+import Link from 'next/link'
 
 export default function ProfilePage() {
   const { user, isLoaded } = useUser()
-  const { preferences, updatePreferences, isLoading, uploadProfilePicture, deleteProfilePicture } = useUserPreferences()
+  const { preferences, updatePreferences, isLoading } = useUserPreferences()
   const [selectedBoard, setSelectedBoard] = useState('')
   const [selectedClass, setSelectedClass] = useState('')
   const [selectedStream, setSelectedStream] = useState('')
   const [selectedState, setSelectedState] = useState('')
   const [selectedSchool, setSelectedSchool] = useState('')
   const [isSaving, setIsSaving] = useState(false)
-  const [isUploadingPicture, setIsUploadingPicture] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [showSettings, setShowSettings] = useState(false)
 
   const schoolBoards = [
     { value: 'CBSE', label: 'CBSE (Central Board of Secondary Education)' },
@@ -52,14 +68,6 @@ export default function ProfilePage() {
     { value: 'Arts', label: 'Arts/Humanities' }
   ]
 
-  const features = SUBSCRIPTION_FEATURES[preferences.subscriptionType];
-  const allowedClasses = classes.filter(cls => features.allowedClasses.includes(cls.value));
-  
-  // For Scholar users, lock class selection after initial selection
-  const isScholarMode = preferences.subscriptionType === 'scholar';
-  const hasExistingClassSelection = preferences.currentClass && preferences.currentClass.trim() !== '';
-  const isClassSelectionLocked = isScholarMode && hasExistingClassSelection;
-
   // Check if stream selection is required (for classes 11 and 12)
   const isStreamRequired = selectedClass === '11' || selectedClass === '12'
 
@@ -74,6 +82,56 @@ export default function ProfilePage() {
     }
   }, [preferences, isLoading])
 
+  // Get subject icon
+  const getSubjectIcon = (subjectId: string) => {
+    const iconMap: { [key: string]: React.ReactNode } = {
+      'mathematics': <Calculator className="w-6 h-6" />,
+      'science': <Atom className="w-6 h-6" />,
+      'social-science': <Globe className="w-6 h-6" />,
+      'english': <Languages className="w-6 h-6" />,
+      'hindi': <Languages className="w-6 h-6" />,
+      'physics': <Atom className="w-6 h-6" />,
+      'chemistry': <Atom className="w-6 h-6" />,
+      'biology': <Atom className="w-6 h-6" />,
+      'history': <Globe className="w-6 h-6" />,
+      'geography': <Globe className="w-6 h-6" />,
+      'economics': <Globe className="w-6 h-6" />,
+      'political-science': <Globe className="w-6 h-6" />,
+      'accountancy': <Calculator className="w-6 h-6" />,
+      'business-studies': <Calculator className="w-6 h-6" />,
+      'computer-science': <Laptop className="w-6 h-6" />,
+      'informatics-practices': <Laptop className="w-6 h-6" />,
+      'psychology': <User className="w-6 h-6" />,
+      'sociology': <User className="w-6 h-6" />,
+      'art': <Palette className="w-6 h-6" />
+    }
+    return iconMap[subjectId] || <BookOpen className="w-6 h-6" />
+  }
+
+  // Get subject description
+  const getSubjectDescription = (subjectId: string, classNum: string) => {
+    const descriptions: { [key: string]: string } = {
+      'mathematics': `Numbers, algebra, geometry, and more with interactive lessons tailored for Class ${classNum} students.`,
+      'science': `Introduction to physics, chemistry, and biology concepts suitable for Class ${classNum} curriculum.`,
+      'social-science': `History, geography, and civics topics from the Class ${classNum} syllabus.`,
+      'english': `Reading, writing, and communication skills through Class ${classNum} literature and language exercises.`,
+      'hindi': `Develop Hindi language skills through stories and activities designed for Class ${classNum}.`,
+      'physics': `Mechanics, thermodynamics, and wave motion with comprehensive theory and numerical problems.`,
+      'chemistry': `Organic, inorganic, and physical chemistry with detailed molecular structures and reactions.`,
+      'biology': `Cell biology, plant physiology, and human anatomy with detailed diagrams and explanations.`,
+      'history': `Ancient, medieval, and modern world history with source-based analysis and interpretation.`,
+      'geography': `Physical, human, and economic geography with map skills and environmental studies.`,
+      'economics': `Microeconomics, macroeconomics, and Indian economic development with case studies.`,
+      'political-science': `Political theory, Indian constitution, and comparative politics with contemporary case studies.`,
+      'accountancy': `Financial accounting principles, journal entries, and statement preparation.`,
+      'business-studies': `Foundational business concepts, organizational structures, and management principles.`,
+      'computer-science': `Programming concepts, algorithms, and data structures aligned with Class ${classNum} CS curriculum.`,
+      'psychology': `Introduction to human behavior, cognition, and psychological disorders with case studies.`,
+      'sociology': `Study of society, social institutions, and human relationships with field research methods.`
+    }
+    return descriptions[subjectId] || `Comprehensive study materials for ${subjectId} designed for Class ${classNum} students.`
+  }
+
   // Reset stream when class changes to non-senior classes
   const handleClassChange = (value: string) => {
     setSelectedClass(value)
@@ -85,15 +143,14 @@ export default function ProfilePage() {
   // Reset school when state changes
   const handleStateChange = (value: string) => {
     setSelectedState(value)
-    setSelectedSchool('') // Reset school selection when state changes
-    setSelectedBoard('') // Reset board selection when state changes
+    setSelectedSchool('')
+    setSelectedBoard('')
   }
 
   // Auto-fill school board when school is selected
   const handleSchoolChange = (value: string) => {
     setSelectedSchool(value)
     
-    // Find the selected school and auto-fill the board
     if (selectedState) {
       const schools = getSchoolsByState(selectedState)
       const selectedSchoolData = schools.find(school => school.name === value)
@@ -107,15 +164,15 @@ export default function ProfilePage() {
     setIsSaving(true)
     try {
       const newPreferences = {
-        schoolBoard: selectedBoard,
-        currentClass: selectedClass,
         state: selectedState,
         school: selectedSchool,
+        schoolBoard: selectedBoard,
+        currentClass: selectedClass,
         ...(isStreamRequired && { stream: selectedStream })
       }
       
       await updatePreferences(newPreferences)
-      console.log('Preferences saved:', newPreferences)
+      setShowSettings(false)
     } catch (error) {
       console.error('Error saving preferences:', error)
       alert('Error saving preferences. Please try again.')
@@ -124,65 +181,10 @@ export default function ProfilePage() {
     }
   }
 
-  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file.')
-      return
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB.')
-      return
-    }
-
-    setIsUploadingPicture(true)
-    try {
-      const success = await uploadProfilePicture(file)
-      if (success) {
-        alert('Profile picture updated successfully!')
-      } else {
-        alert('Error uploading profile picture. Please try again.')
-      }
-    } catch (error) {
-      console.error('Error uploading profile picture:', error)
-      alert('Error uploading profile picture. Please try again.')
-    } finally {
-      setIsUploadingPicture(false)
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
-    }
-  }
-
-  const handleDeleteProfilePicture = async () => {
-    if (!confirm('Are you sure you want to delete your profile picture?')) return
-
-    setIsUploadingPicture(true)
-    try {
-      const success = await deleteProfilePicture()
-      if (success) {
-        alert('Profile picture deleted successfully!')
-      } else {
-        alert('Error deleting profile picture. Please try again.')
-      }
-    } catch (error) {
-      console.error('Error deleting profile picture:', error)
-      alert('Error deleting profile picture. Please try again.')
-    } finally {
-      setIsUploadingPicture(false)
-    }
-  }
-
   if (!isLoaded || isLoading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center h-full">
+        <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
             <p className="mt-2 text-gray-600">Loading profile...</p>
@@ -192,294 +194,254 @@ export default function ProfilePage() {
     )
   }
 
-  const currentProfilePicture = preferences.profilePictureUrl || user?.imageUrl
+  // Check if profile is complete
+  const isProfileComplete = preferences.currentClass && preferences.schoolBoard
+  
+  // Get subjects for the user's class
+  const userSubjects = isProfileComplete ? getSubjectsByClass(preferences.currentClass, preferences.stream) : []
+  
+  const subjects = userSubjects.map(subject => ({
+    id: subject.id,
+    name: subject.name,
+    icon: getSubjectIcon(subject.id),
+    description: getSubjectDescription(subject.id, preferences.currentClass),
+    color: 'from-blue-500 to-purple-500',
+    bgColor: 'from-blue-50 to-purple-50',
+    available: subject.id === 'mathematics' || subject.id === 'science' || subject.id === 'social-science' || subject.id === 'english',
+    topics: Math.floor(Math.random() * 20) + 10 // Random number of topics for demo
+  }))
+
+  const getWelcomeMessage = () => {
+    if (!isProfileComplete) {
+      return {
+        title: "Welcome to ZapUp!",
+        description: "Complete your profile to get personalized learning content and access to your classroom."
+      }
+    }
+    
+    const className = preferences.currentClass
+    const stream = preferences.stream ? ` (${preferences.stream})` : ''
+    
+    return {
+      title: `Welcome to Your Class ${className} Classroom!${stream}`,
+      description: `Explore your subjects below. Each card leads to lessons, practice exercises, and resources aligned with your Class ${className} curriculum.`
+    }
+  }
+
+  const { title, description } = getWelcomeMessage()
+
+  const learningResources = [
+    {
+      title: "Recommended Books",
+      items: [
+        `NCERT Mathematics Class ${preferences.currentClass || '6'}`,
+        `NCERT Science Class ${preferences.currentClass || '6'}`,
+        `NCERT Social Studies Class ${preferences.currentClass || '6'}`
+      ]
+    },
+    {
+      title: "Weekly Schedule",
+      items: [
+        "Monday: Mathematics & Science Quiz",
+        "Wednesday: Language & Social Studies",
+        "Friday: Weekly Review & Activities"
+      ]
+    }
+  ]
+
+  const additionalSections = null;
 
   return (
     <AppLayout>
-      <div className="p-6 max-w-6xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Welcome to ZapUp!</h1>
-          <p className="text-gray-600">Complete your profile to get personalized learning content</p>
+      <Head>
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet" />
+      </Head>
+      <div className="relative min-h-screen bg-gradient-to-br from-blue-50 via-teal-50 to-white pb-16">
+        {/* Settings Button */}
+        <div className="absolute top-4 right-4 z-10">
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full shadow-md border-blue-200 text-blue-700 hover:bg-blue-50"
+            onClick={() => setShowSettings(!showSettings)}
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Settings
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Profile Card */}
-          <Card className="lg:col-span-1 bg-white border border-gray-200">
-            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
-              <CardTitle className="flex items-center space-x-2 text-gray-800">
-                <User className="w-5 h-5 text-blue-600" />
-                <span>Profile Information</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 p-6">
-              <div className="flex flex-col items-center space-y-4">
-                <div className="relative">
-                  {currentProfilePicture ? (
-                    <img
-                      src={currentProfilePicture}
-                      alt="Profile"
-                      className="w-24 h-24 rounded-full border-4 border-blue-100 object-cover"
-                    />
-                  ) : (
-                    <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center border-4 border-white shadow-sm">
-                      <User className="w-12 h-12 text-blue-600" />
+        {/* Settings Panel */}
+        {showSettings && (
+          <div className="flex justify-center w-full mb-8">
+            <div className="w-full max-w-3xl">
+              <Card className="bg-white shadow-2xl rounded-2xl border-0">
+                <CardHeader className="bg-gradient-to-r from-blue-700 to-teal-500 rounded-t-2xl p-6">
+                  <CardTitle className="flex items-center space-x-2 text-white" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    <Settings className="w-5 h-5" />
+                    <span>Academic Settings</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* State */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <MapPin className="w-4 h-4 inline mr-1" />
+                        State
+                      </label>
+                      <Select value={selectedState} onValueChange={handleStateChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your state" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getStateNames().map((state) => (
+                            <SelectItem key={state} value={state}>
+                              {state}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                  )}
-                  {isUploadingPicture && (
-                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="text-center">
-                  <h3 className="font-semibold text-gray-900 text-lg">
-                    {preferences.firstName || user?.firstName} {preferences.lastName || user?.lastName}
-                  </h3>
-                  <p className="text-sm text-blue-600 font-medium">Student</p>
-                </div>
 
-                <div className="flex space-x-2 w-full">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1 border-blue-200 text-blue-700 hover:bg-blue-50"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploadingPicture}
-                  >
-                    <Camera className="w-4 h-4 mr-2" />
-                    Upload
-                  </Button>
-                  {preferences.profilePictureUrl && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="border-red-200 text-red-700 hover:bg-red-50"
-                      onClick={handleDeleteProfilePicture}
-                      disabled={isUploadingPicture}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleProfilePictureUpload}
-                  className="hidden"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Account Details */}
-          <Card className="lg:col-span-2 bg-white border border-gray-200">
-            <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-gray-100">
-              <CardTitle className="flex items-center space-x-2 text-gray-800">
-                <Settings className="w-5 h-5 text-green-600" />
-                <span>Account Details</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6 p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    First Name
-                  </label>
-                  <p className="text-gray-900 bg-blue-50 px-4 py-3 rounded-lg border border-blue-100">
-                    {preferences.firstName || user?.firstName || 'Not provided'}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Last Name
-                  </label>
-                  <p className="text-gray-900 bg-blue-50 px-4 py-3 rounded-lg border border-blue-100">
-                    {preferences.lastName || user?.lastName || 'Not provided'}
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <Mail className="w-4 h-4 inline mr-1 text-blue-600" />
-                  Email Address
-                </label>
-                <p className="text-gray-900 bg-blue-50 px-4 py-3 rounded-lg border border-blue-100">
-                  {preferences.email || user?.emailAddresses[0]?.emailAddress}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <Calendar className="w-4 h-4 inline mr-1 text-blue-600" />
-                  Member Since
-                </label>
-                <p className="text-gray-900 bg-blue-50 px-4 py-3 rounded-lg border border-blue-100">
-                  {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Academic Preferences */}
-        <Card className="mt-6 bg-white border border-gray-200">
-          <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-gray-100">
-            <CardTitle className="flex items-center space-x-2 text-gray-800">
-              <School className="w-5 h-5 text-purple-600" />
-              <span>Academic Information</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* State - First Field */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <MapPin className="w-4 h-4 inline mr-1 text-purple-600" />
-                  State
-                </label>
-                <Select value={selectedState} onValueChange={handleStateChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select your state" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getStateNames().map((state) => (
-                      <SelectItem key={state} value={state}>
-                        {state}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* School - Second Field (only shows when state is selected) */}
-              {selectedState && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    <School className="w-4 h-4 inline mr-1 text-purple-600" />
-                    School
-                  </label>
-                  <Select value={selectedSchool} onValueChange={handleSchoolChange}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select your school" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getSchoolsByState(selectedState).map((school) => (
-                        <SelectItem key={school.name} value={school.name}>
-                          {school.name} - {school.city} ({school.board})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {/* School Board - Third Field (auto-filled when school is selected) */}
-              {selectedSchool && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    <School className="w-4 h-4 inline mr-1 text-purple-600" />
-                    School Board
-                    <span className="text-xs text-gray-500 ml-1">(Auto-filled)</span>
-                  </label>
-                  <Select value={selectedBoard} onValueChange={setSelectedBoard} disabled>
-                    <SelectTrigger className="w-full bg-gray-50">
-                      <SelectValue placeholder="Auto-filled from school selection" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {schoolBoards.map((board) => (
-                        <SelectItem key={board.value} value={board.value}>
-                          {board.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {/* Current Class - Fourth Field (only shows when school board is set) */}
-              {selectedBoard && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    <GraduationCap className="w-4 h-4 inline mr-1 text-purple-600" />
-                    Current Class
-                    {isClassSelectionLocked && (
-                      <span className="text-xs text-amber-600 ml-1">(Locked in Scholar Plan)</span>
+                    {/* School */}
+                    {selectedState && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <School className="w-4 h-4 inline mr-1" />
+                          School
+                        </label>
+                        <Select value={selectedSchool} onValueChange={handleSchoolChange}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your school" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getSchoolsByState(selectedState).map((school) => (
+                              <SelectItem key={school.name} value={school.name}>
+                                {school.name} - {school.city}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     )}
-                  </label>
-                  <Select 
-                    value={selectedClass} 
-                    onValueChange={handleClassChange}
-                    disabled={isClassSelectionLocked ? true : undefined}
-                  >
-                    <SelectTrigger className={`w-full ${isClassSelectionLocked ? 'bg-gray-50 cursor-not-allowed' : ''}`}>
-                      <SelectValue placeholder="Select your class" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allowedClasses.map((classItem) => (
-                        <SelectItem key={classItem.value} value={classItem.value}>
-                          {classItem.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {isClassSelectionLocked && (
-                    <p className="text-xs text-amber-600 mt-1 flex items-center">
-                      <span className="mr-1">🔒</span>
-                      Class selection is locked in Scholar Plan. Upgrade to Achiever Plan to access multiple classes.
-                    </p>
-                  )}
-                </div>
-              )}
 
-              {/* Stream - Fifth Field (only for classes 11 and 12) */}
-              {isStreamRequired && selectedClass && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    <GraduationCap className="w-4 h-4 inline mr-1 text-purple-600" />
-                    Stream
-                  </label>
-                  <Select value={selectedStream} onValueChange={setSelectedStream}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select your stream" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {streams.map((stream) => (
-                        <SelectItem key={stream.value} value={stream.value}>
-                          {stream.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+                    {/* Class */}
+                    {selectedBoard && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <GraduationCap className="w-4 h-4 inline mr-1" />
+                          Class
+                        </label>
+                        <Select value={selectedClass} onValueChange={handleClassChange}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your class" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {classes.map((classItem) => {
+                              const canAccess = canAccessClass(classItem.value, {
+                                currentClass: preferences.currentClass,
+                                subscriptionType: preferences.subscriptionType
+                              })
+                              const isCurrentClass = classItem.value === preferences.currentClass
+                              
+                              return (
+                                <SelectItem 
+                                  key={classItem.value} 
+                                  value={classItem.value}
+                                  disabled={!canAccess && !isCurrentClass}
+                                >
+                                  {classItem.label}
+                                  {!canAccess && !isCurrentClass && (
+                                    <span className="text-orange-600 text-xs ml-2">
+                                      (Upgrade to unlock)
+                                    </span>
+                                  )}
+                                  {preferences.subscriptionType === 'scholar' && !isCurrentClass && canAccess && (
+                                    <span className="text-blue-600 text-xs ml-2">
+                                      (Switch class)
+                                    </span>
+                                  )}
+                                </SelectItem>
+                              )
+                            })}
+                          </SelectContent>
+                        </Select>
+                        {preferences.subscriptionType === 'explorer' && selectedClass && !canAccessClass(selectedClass, {
+                          currentClass: preferences.currentClass,
+                          subscriptionType: preferences.subscriptionType
+                        }) && (
+                          <p className="text-xs text-orange-600 mt-1">
+                            Classes 9-12 require a Scholar plan or higher. 
+                            <Link href="/pricing" className="underline ml-1">Upgrade now</Link>
+                          </p>
+                        )}
+                        {preferences.subscriptionType === 'scholar' && selectedClass && selectedClass !== preferences.currentClass && (
+                          <p className="text-xs text-blue-600 mt-1">
+                            Scholar plan allows access to one class at a time. Changing will update your accessible content.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Stream */}
+                    {isStreamRequired && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Stream
+                        </label>
+                        <Select value={selectedStream} onValueChange={setSelectedStream}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your stream" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {streams.map((stream) => (
+                              <SelectItem key={stream.value} value={stream.value}>
+                                {stream.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end space-x-4 mt-6">
+                    <Button variant="outline" className="rounded-full" onClick={() => setShowSettings(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      className="bg-blue-600 hover:bg-teal-500 text-white rounded-full shadow-md"
+                      onClick={handleSavePreferences}
+                      disabled={isSaving || !selectedClass || !selectedBoard}
+                    >
+                      {isSaving ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
+          </div>
+        )}
 
-            <div className="mt-6 pt-4 border-t border-gray-200">
-              <Button 
-                onClick={handleSavePreferences}
-                className="w-full md:w-auto bg-purple-600 hover:bg-purple-700 text-white"
-                disabled={!selectedState || !selectedSchool || !selectedBoard || !selectedClass || (isStreamRequired && !selectedStream) || isSaving}
-              >
-                {isSaving ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Saving...
-                  </>
-                ) : (
-                  'Save Academic Preferences'
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Divider */}
+        <div className="w-full flex justify-center my-8">
+          <div className="h-1 w-32 bg-gradient-to-r from-blue-400 via-teal-400 to-blue-400 rounded-full opacity-30" />
+        </div>
 
-        {/* Quick Actions */}
-
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto">
+          <ClassroomLayout
+            title={<span style={{ fontFamily: 'Montserrat, sans-serif' }} className="text-blue-800">{title}</span>}
+            description={description}
+            subjects={subjects.map(s => ({
+              ...s,
+              available: s.available,
+              badgeColor: s.available ? 'bg-teal-500 text-white' : 'bg-gray-200 text-gray-600',
+              cardClass: s.available ? 'shadow-xl border-teal-100' : 'shadow-md border-gray-100',
+            }))}
+            additionalSections={additionalSections}
+          />
+        </div>
       </div>
     </AppLayout>
   )

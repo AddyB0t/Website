@@ -11,6 +11,7 @@ import { CopyrightYear } from '@/components/CopyrightYear'
 import { MobileMenuButton } from '@/components/MobileMenuButton'
 import { AppLayout } from '@/components/AppLayout'
 import { useRazorpay } from '@/hooks/useRazorpay'
+import { useUserPreferences } from '@/contexts/UserPreferencesContext'
 import { 
   Check, 
   Star, 
@@ -192,11 +193,37 @@ const featureComparison = [
   }
 ]
 
+// Map subscription types to plan IDs
+const subscriptionToPlanId = {
+  explorer: 'free',
+  scholar: 'basic',
+  achiever: 'plus',
+  genius_plus: 'premium'
+} as const
+
 export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly')
   const [selectedTier, setSelectedTier] = useState<string | null>(null)
   const { isSignedIn, isLoaded } = useAuth()
   const { initiatePayment, isLoading } = useRazorpay()
+  const { preferences } = useUserPreferences()
+
+  // Helper function to check if a tier is the current plan
+  const isCurrentPlan = (tierId: string) => {
+    const currentPlanId = subscriptionToPlanId[preferences.subscriptionType]
+    return currentPlanId === tierId
+  }
+
+  // Get current plan display info
+  const getCurrentPlanInfo = () => {
+    switch (preferences.subscriptionType) {
+      case 'explorer': return { name: 'Explorer', description: 'Free Plan' }
+      case 'scholar': return { name: 'Scholar', description: 'Basic Plan' }
+      case 'achiever': return { name: 'Achiever', description: 'Plus Plan' }
+      case 'genius_plus': return { name: 'Genius+', description: 'Premium Plan' }
+      default: return { name: 'Explorer', description: 'Free Plan' }
+    }
+  }
 
   const handleTierSelect = (tierId: string) => {
     if (tierId === 'free') {
@@ -224,8 +251,179 @@ export default function PricingPage() {
     })
   }
 
-  // Always show the full marketing page for pricing
-  // This ensures a consistent experience for all users coming from marketing pages
+  // Show different experience based on authentication
+  if (isSignedIn) {
+    return (
+      <AppLayout>
+        <div className="p-6 max-w-7xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Choose Your Learning Plan</h1>
+            <p className="text-gray-600">Upgrade your account to unlock more features and accelerate your learning journey.</p>
+          </div>
+          
+          {/* Current Plan Status */}
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Shield className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-green-900">
+                    Current Plan: {getCurrentPlanInfo().name}
+                  </p>
+                  <p className="text-sm text-green-700">{getCurrentPlanInfo().description}</p>
+                </div>
+              </div>
+              <Badge className="bg-green-100 text-green-800">Active</Badge>
+            </div>
+          </div>
+          
+          {/* Billing Toggle */}
+          <div className="flex items-center justify-center space-x-4 mb-12">
+            <span className={`text-sm ${billingCycle === 'monthly' ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
+              Monthly
+            </span>
+            <button
+              onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'annual' : 'monthly')}
+              className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  billingCycle === 'annual' ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className={`text-sm ${billingCycle === 'annual' ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
+              Annual
+            </span>
+            <Badge className="bg-green-100 text-green-700 ml-2">Save 27%</Badge>
+          </div>
+
+          {/* Pricing Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {pricingTiers.map((tier) => (
+              <Card 
+                key={tier.id}
+                className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg bg-white border ${
+                  isCurrentPlan(tier.id) 
+                    ? 'ring-2 ring-green-500 shadow-lg border-green-200' 
+                    : tier.popular 
+                      ? 'ring-2 ring-blue-500 shadow-lg scale-105' 
+                      : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                {isCurrentPlan(tier.id) && (
+                  <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-green-500 to-green-600 text-white text-center py-2 text-sm font-medium">
+                    ✅ Your Current Plan
+                  </div>
+                )}
+                {tier.popular && !isCurrentPlan(tier.id) && (
+                  <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-center py-2 text-sm font-medium">
+                    🌟 Most Popular
+                  </div>
+                )}
+                
+                <CardHeader className={`${(tier.popular && !isCurrentPlan(tier.id)) || isCurrentPlan(tier.id) ? 'pt-12' : 'pt-6'} pb-4`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <Badge className={isCurrentPlan(tier.id) ? 'bg-green-100 text-green-700' : tier.badgeColor}>
+                      {isCurrentPlan(tier.id) ? 'Current Plan' : tier.badge}
+                    </Badge>
+                    <div className={`p-3 rounded-xl bg-gradient-to-r ${tier.color} text-white shadow-sm`}>
+                      {tier.icon}
+                    </div>
+                  </div>
+                  
+                  <CardTitle className="text-2xl font-bold text-gray-900 mb-2">
+                    {tier.name}
+                  </CardTitle>
+                    
+                  <div className="mb-4">
+                    {billingCycle === 'monthly' ? (
+                      <div className="flex items-baseline">
+                        <span className="text-4xl font-bold text-gray-900">
+                          {tier.price}
+                        </span>
+                        {tier.price !== '₹0' && (
+                          <span className="text-gray-500 ml-2">/month</span>
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="flex items-baseline">
+                          <span className="text-4xl font-bold text-gray-900">
+                            {tier.annualMonthlyEquivalent || tier.price}
+                          </span>
+                          {tier.price !== '₹0' && (
+                            <span className="text-gray-500 ml-2">/month</span>
+                          )}
+                        </div>
+                        {tier.annualPrice && (
+                          <div className="mt-1">
+                            <span className="text-sm text-gray-600">
+                              {tier.annualPrice} billed annually
+                            </span>
+                            <Badge className="bg-green-100 text-green-700 ml-2 text-xs">
+                              Save {tier.annualSavings}
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                    
+                  <p className="text-gray-600 text-sm mb-6">
+                    {tier.ideal}
+                  </p>
+                    
+                  <Button 
+                    variant={isCurrentPlan(tier.id) ? 'outline' : tier.buttonVariant}
+                    className={`w-full py-3 font-semibold ${
+                      isCurrentPlan(tier.id)
+                        ? 'bg-green-50 border-green-200 text-green-700 cursor-not-allowed'
+                        : tier.popular 
+                          ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md' 
+                          : tier.id === 'free'
+                            ? 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                            : tier.id === 'premium'
+                              ? 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md border-0'
+                              : 'border-blue-200 text-blue-700 hover:bg-blue-50'
+                    }`}
+                    onClick={() => !isCurrentPlan(tier.id) && handleTierSelect(tier.id)}
+                    disabled={isCurrentPlan(tier.id) || (isLoading && selectedTier === tier.id)}
+                  >
+                    {isCurrentPlan(tier.id) 
+                      ? 'Current Plan' 
+                      : isLoading && selectedTier === tier.id 
+                        ? 'Processing...' 
+                        : tier.buttonText}
+                  </Button>
+                </CardHeader>
+                
+                <CardContent className="pt-0 px-6 pb-6">
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-3">Features included:</h4>
+                      <ul className="space-y-3">
+                        {tier.features.map((feature, index) => (
+                          <li key={index} className="flex items-start space-x-3">
+                            <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                            <span className="text-sm text-gray-700 leading-relaxed">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </AppLayout>
+    )
+  }
+
+  // Show full marketing page for non-signed in users
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       {/* Header */}

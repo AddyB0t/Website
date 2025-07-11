@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Supabase configuration from environment variables
-require('dotenv').config();
+require('dotenv').config({ path: '.env.local' });
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -14,19 +14,19 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Base directory for Class 7th Mathematics questions
-const baseDir = 'D:\\Addy\\Client\\Questions\\Class 7th\\Mathematics';
+// Base directory for Class 7th Mathematics questions - update this path to your Questions folder
+const baseDir = '/mnt/data/Pasia/Website/Questions/Class 7th/Mathematics';
 
-// Question chapters mapping
+// Question chapters mapping based on your folder structure
 const questionChapters = [
   'A Peek Beyond The Point',
-  'Parallel And Intersecting Lines', 
-  'Number Play',
   'A Tale Of Three Intersecting Lines',
-  'Working With Fractions',
-  'Expressions Using Letter-Numbers',
   'Arithmetic Expressions',
-  'Large Number Around Us'
+  'Expressions Using Letter-Numbers',
+  'Large Number Around Us',
+  'Number Play',
+  'Parallel And Intersecting Lines',
+  'Working With Fractions'
 ];
 
 // Function to parse markdown question file
@@ -121,6 +121,14 @@ function cleanQuestionText(text) {
 async function loadQuestions() {
   try {
     console.log('🚀 Starting to load Class 7th Mathematics questions into database...');
+    console.log(`📁 Looking for questions in: ${baseDir}`);
+    
+    // Check if base directory exists
+    if (!fs.existsSync(baseDir)) {
+      console.error(`❌ Questions directory not found: ${baseDir}`);
+      console.log('💡 Please update the baseDir variable in the script to point to your Questions folder');
+      return;
+    }
     
     // First, ensure we have the basic structure
     console.log('📚 Setting up basic database structure...');
@@ -271,21 +279,21 @@ async function loadQuestions() {
       console.log(`✅ Chapter completed: ${chapterTitle}`);
     }
     
-    console.log('\n🎉 All Class 7th Mathematics questions loaded successfully!');
+    console.log('\n🎉 All questions loaded successfully!');
     
-    // Print summary
-    const { data: totalQuestions } = await supabase
-      .from('questions')
-      .select('id', { count: 'exact' });
+    // Summary
+    const { data: totalChapters } = await supabase
+      .from('chapters')
+      .select('*', { count: 'exact' })
+      .eq('class_id', '7');
     
     const { data: totalExercises } = await supabase
       .from('exercises')
-      .select('id', { count: 'exact' });
+      .select('*', { count: 'exact' });
     
-    const { data: totalChapters } = await supabase
-      .from('chapters')
-      .select('id', { count: 'exact' })
-      .eq('class_id', '7');
+    const { data: totalQuestions } = await supabase
+      .from('questions')
+      .select('*', { count: 'exact' });
     
     console.log('\n📊 Summary:');
     console.log(`   Chapters: ${totalChapters?.length || 0}`);
@@ -299,15 +307,7 @@ async function loadQuestions() {
 
 // Run the script
 if (require.main === module) {
-  loadQuestions()
-    .then(() => {
-      console.log('\n✅ Script completed');
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error('❌ Script failed:', error);
-      process.exit(1);
-    });
+  loadQuestions();
 }
 
 module.exports = { loadQuestions, parseQuestionFile, cleanQuestionText }; 

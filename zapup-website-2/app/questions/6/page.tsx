@@ -3,190 +3,140 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { AppLayout } from '@/components/AppLayout'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Brain, BookOpen, ChevronRight, Calculator, Atom, Globe, Languages, Star, Trophy, Clock } from 'lucide-react'
-import Link from 'next/link'
+import { ClassroomLayout, LearningResourcesSection } from '@/components/ClassroomLayout'
+import { Calculator, Atom, Globe, Languages, BookOpen, Laptop, Palette } from 'lucide-react'
+import { useUserPreferences } from '@/contexts/UserPreferencesContext'
 
 export default function Class6QuestionsPage() {
   const router = useRouter()
+  const { preferences, isProfileComplete } = useUserPreferences()
   
+  // Check if user can access this class
+  useEffect(() => {
+    if (!isProfileComplete()) {
+      router.push('/profile')
+      return
+    }
+  }, [isProfileComplete, router])
+
   // Define subjects available for Class 6
   const subjects = [
     {
       id: 'mathematics',
       name: 'Mathematics',
       icon: <Calculator className="w-6 h-6" />,
-      description: 'Numbers, Basic Geometry, Mensuration, Data Handling',
+      description: 'Numbers, algebra, geometry, and data handling with interactive lessons tailored for Class 6 students.',
       color: 'from-blue-500 to-purple-500',
       bgColor: 'from-blue-50 to-purple-50',
-      available: false,
+      available: true,
       topics: 14
     },
     {
       id: 'science',
       name: 'Science',
       icon: <Atom className="w-6 h-6" />,
-      description: 'Food, Materials, Living World, Natural Phenomena',
+      description: 'Introduction to physics, chemistry, and biology concepts suitable for Class 6 curriculum.',
       color: 'from-green-500 to-emerald-500',
       bgColor: 'from-green-50 to-emerald-50',
-      available: false,
+      available: true,
       topics: 16
     },
     {
       id: 'social-science',
-      name: 'Social Science',
+      name: 'Social Studies',
       icon: <Globe className="w-6 h-6" />,
-      description: 'History, Geography, Civics - Ancient to Medieval India',
+      description: 'Explore history, geography, and civics topics from ancient to medieval India.',
       color: 'from-orange-500 to-red-500',
       bgColor: 'from-orange-50 to-red-50',
-      available: false,
+      available: true,
       topics: 22
     },
     {
       id: 'english',
       name: 'English',
       icon: <Languages className="w-6 h-6" />,
-      description: 'Reading, Writing, Grammar, Literature',
+      description: 'Reading, writing, grammar, and literature skills through engaging Class 6 exercises.',
       color: 'from-pink-500 to-rose-500',
       bgColor: 'from-pink-50 to-rose-50',
-      available: false,
+      available: true,
       topics: 12
     },
     {
       id: 'hindi',
       name: 'Hindi',
-      icon: <BookOpen className="w-6 h-6" />,
-      description: 'पठन, लेखन, व्याकरण, साहित्य',
-      color: 'from-indigo-500 to-blue-500',
-      bgColor: 'from-indigo-50 to-blue-50',
+      icon: <Languages className="w-6 h-6" />,
+      description: 'Develop Hindi language skills through stories and activities designed for Class 6.',
+      color: 'from-purple-500 to-indigo-500',
+      bgColor: 'from-purple-50 to-indigo-50',
       available: false,
-      topics: 17
+      topics: 10
+    },
+    {
+      id: 'computer',
+      name: 'Computer Studies / Applications',
+      icon: <Laptop className="w-6 h-6" />,
+      description: 'Basic computer concepts and skills appropriate for Class 6 students.',
+      color: 'from-cyan-500 to-blue-500',
+      bgColor: 'from-cyan-50 to-blue-50',
+      available: false,
+      topics: 8
+    },
+    {
+      id: 'scholastic',
+      name: 'Scholastic',
+      icon: <BookOpen className="w-6 h-6" />,
+      description: 'Life skills through environmental studies and general knowledge for Class 6.',
+      color: 'from-teal-500 to-green-500',
+      bgColor: 'from-teal-50 to-green-50',
+      available: false,
+      topics: 6
+    },
+    {
+      id: 'art',
+      name: 'Art & Craft',
+      icon: <Palette className="w-6 h-6" />,
+      description: 'Creative projects and activities suitable for Class 6 students.',
+      color: 'from-amber-500 to-orange-500',
+      bgColor: 'from-amber-50 to-orange-50',
+      available: false,
+      topics: 12
     }
   ]
 
-  const handleSubjectClick = (subjectId: string, available: boolean) => {
-    if (available) {
-      router.push(`/questions/6/${subjectId}`)
+  const learningResources = [
+    {
+      title: "Recommended Books",
+      items: [
+        "NCERT Mathematics Class 6",
+        "NCERT Science Class 6", 
+        "NCERT Social Science Class 6"
+      ]
+    },
+    {
+      title: "Weekly Schedule",
+      items: [
+        "Monday: Mathematics & Science Quiz",
+        "Wednesday: Language & Social Studies",
+        "Friday: Weekly Review & Activities"
+      ]
     }
-  }
+  ]
 
-  const availableSubjects = subjects.filter(s => s.available)
-  const comingSoonSubjects = subjects.filter(s => !s.available)
+  const additionalSections = (
+    <LearningResourcesSection 
+      title="Class 6 Learning Resources" 
+      resources={learningResources} 
+    />
+  )
 
   return (
     <AppLayout>
-      <div className="p-6 max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
-            <Link href="/questions" className="hover:text-blue-600">Questions</Link>
-            <ChevronRight className="w-4 h-4" />
-            <span>Class 6</span>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center space-x-3">
-            <Brain className="w-8 h-8 text-purple-600" />
-            <span>Class 6 Questions</span>
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Build your foundation with Class 6 questions across all subjects. Questions coming soon!
-          </p>
-        </div>
-
-        {/* Available Subjects */}
-        {availableSubjects.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center space-x-2">
-              <Star className="w-5 h-5 text-green-500" />
-              <span>Available Now</span>
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {availableSubjects.map((subject) => (
-                <Card 
-                  key={subject.id}
-                  className="bg-white border border-gray-200 hover:shadow-xl transition-all duration-300 cursor-pointer group"
-                  onClick={() => handleSubjectClick(subject.id, subject.available)}
-                >
-                  <CardHeader className={`bg-gradient-to-br ${subject.bgColor} border-b border-gray-100`}>
-                    <CardTitle className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className={`p-2 bg-gradient-to-r ${subject.color} rounded-lg text-white`}>
-                          {subject.icon}
-                        </div>
-                        <div>
-                          <span className="text-gray-800 font-semibold">{subject.name}</span>
-                          <Badge className="ml-2 bg-green-100 text-green-800 border-green-200">
-                            {subject.topics} Topics
-                          </Badge>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <p className="text-gray-600 text-sm mb-4">{subject.description}</p>
-                    <Button 
-                      className={`w-full bg-gradient-to-r ${subject.color} hover:opacity-90 text-white transition-all duration-200`}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleSubjectClick(subject.id, subject.available)
-                      }}
-                    >
-                      Start Questions
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Coming Soon Subjects */}
-        {comingSoonSubjects.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center space-x-2">
-              <Clock className="w-5 h-5 text-orange-500" />
-              <span>Coming Soon</span>
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {comingSoonSubjects.map((subject) => (
-                <Card 
-                  key={subject.id}
-                  className="bg-gray-50 border border-gray-200 opacity-75"
-                >
-                  <CardHeader className="bg-gradient-to-br from-gray-50 to-gray-100 border-b border-gray-200">
-                    <CardTitle className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-gray-300 rounded-lg text-gray-600">
-                          {subject.icon}
-                        </div>
-                        <div>
-                          <span className="text-gray-600 font-semibold">{subject.name}</span>
-                          <Badge className="ml-2 bg-orange-100 text-orange-800 border-orange-200">
-                            Coming Soon
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <p className="text-gray-500 text-sm mb-4">{subject.description}</p>
-                    <Button 
-                      className="w-full bg-gray-300 text-gray-600 cursor-not-allowed"
-                      disabled
-                    >
-                      Coming Soon
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
-
-      </div>
+      <ClassroomLayout
+        title="Welcome to Your Class 6 Classroom!"
+        description="Explore your subjects below. Each card leads to lessons, practice exercises, and resources aligned with your Class 6 curriculum."
+        subjects={subjects}
+        additionalSections={additionalSections}
+      />
     </AppLayout>
   )
 } 

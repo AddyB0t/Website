@@ -33,6 +33,15 @@ export default function QuestionClassPage() {
       router.push('/profile')
       return
     }
+    // Scholar plan restriction: only allow access to selected class
+    if (
+      preferences.subscriptionType === 'scholar' &&
+      classNumber !== preferences.currentClass
+    ) {
+      // Optionally, show a toast message here if you have a toast system
+      router.push(`/questions/${preferences.currentClass}`)
+      return
+    }
     
     // Check if user can access this class based on subscription type
     if (!canAccessClass(classNumber, {

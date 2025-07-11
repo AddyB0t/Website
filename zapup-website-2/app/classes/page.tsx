@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { 
   BookOpen, 
   Users, 
@@ -15,12 +16,19 @@ import {
   ChevronLeft,
   Eye,
   UserPlus,
-  LogIn
+  LogIn,
+  Lock,
+  Crown
 } from 'lucide-react'
 import Link from 'next/link'
+import { useAuth } from '@clerk/nextjs'
+import { useUserPreferences } from '@/contexts/UserPreferencesContext'
+import { filterClassesByAccess, getUpgradeMessage, getSubscriptionDisplayInfo } from '@/lib/access-control'
 
 export default function ClassesPage() {
   const router = useRouter()
+  const { isSignedIn } = useAuth()
+  const { preferences } = useUserPreferences()
 
   const classPrograms = [
     {
@@ -77,56 +85,76 @@ export default function ClassesPage() {
     { id: '12', name: 'Class 12', category: 'Higher Secondary', color: 'violet' }
   ]
 
+  // Filter classes based on subscription if user is signed in
+  const filteredClasses = isSignedIn 
+    ? filterClassesByAccess(allClasses, preferences.subscriptionType, preferences.currentClass)
+    : allClasses.map(cls => ({ ...cls, accessible: true, requiresUpgrade: false }))
+
+  const subscriptionInfo = isSignedIn ? getSubscriptionDisplayInfo(preferences.subscriptionType) : null
+
   const handleProgramPreview = (href: string) => {
     router.push(href)
   }
 
-  const handleClassPreview = (classId: string) => {
-    router.push(`/preview/${classId}`)
+  const handleClassPreview = (classId: string, accessible: boolean, requiresUpgrade: boolean) => {
+    if (!isSignedIn) {
+      router.push(`/preview/${classId}`)
+      return
+    }
+
+    if (accessible) {
+      router.push(`/preview/${classId}`)
+    } else if (requiresUpgrade) {
+      // Redirect to pricing page with the class context
+      router.push(`/pricing?upgrade=${classId}`)
+    }
+  }
+
+  const getClassCardStyle = (accessible: boolean, requiresUpgrade: boolean) => {
+    if (!isSignedIn || accessible) {
+      return "cursor-pointer transition-all hover:shadow-lg hover:scale-105 bg-white border-0 shadow-md"
+    }
+    return "cursor-pointer transition-all hover:shadow-md bg-gray-50 border-2 border-dashed border-gray-300 opacity-75"
+  }
+
+  const getButtonText = (accessible: boolean, requiresUpgrade: boolean) => {
+    if (!isSignedIn || accessible) return "Preview"
+    if (requiresUpgrade) return "Upgrade"
+    return "Preview"
+  }
+
+  const getButtonIcon = (accessible: boolean, requiresUpgrade: boolean) => {
+    if (!isSignedIn || accessible) return <Eye className="w-3 h-3 ml-1" />
+    if (requiresUpgrade) return <Crown className="w-3 h-3 ml-1" />
+    return <Eye className="w-3 h-3 ml-1" />
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white py-4 px-6 md:px-12 flex items-center justify-between border-b border-gray-100 sticky top-0 z-40">
-        <div className="flex items-center">
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="w-10 h-10">
-              <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                <path d="M20 5L5 20L20 35L35 20L20 5Z" stroke="#333" strokeWidth="2" fill="white" />
-                <path d="M20 12L12 20L20 28L28 20L20 12Z" fill="#333" />
-                <path d="M20 16V24M16 20H24" stroke="white" strokeWidth="2" strokeLinecap="round" />
-              </svg>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      {/* Header with subscription info */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Classes & Programs</h1>
+              <p className="text-gray-600">Choose your learning path</p>
             </div>
-            <span className="text-gray-800 font-light tracking-widest uppercase text-lg">ZapUp</span>
-          </Link>
-        </div>
-        <div className="flex items-center space-x-4">
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => router.push('/')}
-            className="text-gray-600"
-          >
-            <ChevronLeft className="w-4 h-4 mr-2" />
-            Back to Home
-          </Button>
-          <div className="flex items-center space-x-2">
-            <Link href="/sign-in">
-              <Button variant="ghost" size="sm" className="text-blue-800 hover:bg-blue-50">
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/sign-up">
-              <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                Sign Up
-              </Button>
-            </Link>
+            {isSignedIn && subscriptionInfo && (
+              <div className="flex items-center space-x-3">
+                <Badge className={`bg-${subscriptionInfo.color}-100 text-${subscriptionInfo.color}-800`}>
+                  {subscriptionInfo.name} Plan
+                </Badge>
+                <Link href="/pricing">
+                  <Button variant="outline" size="sm">
+                    Upgrade Plan
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         </div>
-      </header>
+      </div>
 
-      {/* Main Content */}
       <main className="py-8 px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
           {/* Header Section */}
@@ -144,76 +172,72 @@ export default function ClassesPage() {
           <div className="mb-16">
             <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">Class Programs</h2>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {classPrograms.map((program) => (
-                <Card 
-                  key={program.id}
-                  className={`cursor-pointer transition-all hover:shadow-xl hover:scale-105 bg-white border-2 ${program.borderColor} overflow-hidden`}
-                  onClick={() => handleProgramPreview(program.href)}
-                >
-                  <CardContent className="p-0">
-                    <div className={`${program.bgColor} p-8 text-center`}>
-                      <div className={`w-20 h-20 rounded-full bg-gradient-to-r ${program.color} flex items-center justify-center text-white mx-auto mb-4`}>
-                        {program.icon}
-                      </div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-2">{program.title}</h3>
-                      <p className="text-lg font-medium text-gray-700">{program.subtitle}</p>
+              {classPrograms.map((program, index) => (
+                <Card key={program.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
+                  <div className={`${program.bgColor} p-6 text-center ${program.borderColor} border-b`}>
+                    <div className={`w-20 h-20 rounded-full bg-gradient-to-r ${program.color} flex items-center justify-center text-white mx-auto mb-4 shadow-lg`}>
+                      {program.icon}
                     </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{program.title}</h3>
+                    <p className="text-lg font-medium text-gray-700 mb-4">{program.subtitle}</p>
+                  </div>
+                  
+                  <CardContent className="p-6">
+                    <p className="text-gray-600 mb-6 leading-relaxed">{program.description}</p>
                     
-                    <div className="p-6">
-                      <p className="text-gray-600 mb-6 leading-relaxed">{program.description}</p>
-                      
-                      <div className="mb-4">
-                        <h4 className="font-semibold text-gray-900 mb-2">Classes Included:</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {program.classes.map((className, index) => (
-                            <span 
-                              key={index}
-                              className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium"
-                            >
-                              {className}
-                            </span>
-                          ))}
-                        </div>
+                    {/* Classes */}
+                    <div className="mb-4">
+                      <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
+                        <GraduationCap className="w-4 h-4 mr-1" />
+                        Classes
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {program.classes.map((className) => (
+                          <Badge key={className} variant="outline" className="text-xs">
+                            {className}
+                          </Badge>
+                        ))}
                       </div>
-                      
-                      <div className="mb-4">
-                        <h4 className="font-semibold text-gray-900 mb-2">Subjects/Streams:</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {program.subjects.map((subject, index) => (
-                            <span 
-                              key={index}
-                              className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-                            >
-                              {subject}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div className="mb-6">
-                        <h4 className="font-semibold text-gray-900 mb-2">Key Features:</h4>
-                        <ul className="space-y-1">
-                          {program.features.map((feature, index) => (
-                            <li key={index} className="text-sm text-gray-600 flex items-center">
-                              <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2"></span>
-                              {feature}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      
-                      <Button 
-                        className="w-full bg-blue-600 hover:bg-blue-700"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleProgramPreview(program.href)
-                        }}
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        Preview {program.title}
-                        <ChevronRight className="w-4 h-4 ml-2" />
-                      </Button>
                     </div>
+
+                    {/* Subjects */}
+                    <div className="mb-4">
+                      <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
+                        <BookOpen className="w-4 h-4 mr-1" />
+                        Subjects
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {program.subjects.map((subject) => (
+                          <Badge key={subject} variant="secondary" className="text-xs">
+                            {subject}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Features */}
+                    <div className="mb-6">
+                      <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
+                        <Star className="w-4 h-4 mr-1" />
+                        Features
+                      </h4>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        {program.features.map((feature) => (
+                          <li key={feature} className="flex items-center">
+                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2"></div>
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <Button 
+                      className={`w-full bg-gradient-to-r ${program.color} text-white hover:shadow-lg transition-all duration-200`}
+                      onClick={() => handleProgramPreview(program.href)}
+                    >
+                      Explore Program
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
                   </CardContent>
                 </Card>
               ))}
@@ -226,28 +250,43 @@ export default function ClassesPage() {
             <p className="text-center text-gray-600 mb-12">Click on any class to explore its specific subjects and curriculum</p>
             
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-              {allClasses.map((classItem) => (
+              {filteredClasses.map((classItem) => (
                 <Card 
                   key={classItem.id}
-                  className="cursor-pointer transition-all hover:shadow-lg hover:scale-105 bg-white border-0 shadow-md"
-                  onClick={() => handleClassPreview(classItem.id)}
+                  className={getClassCardStyle(classItem.accessible, classItem.requiresUpgrade)}
+                  onClick={() => handleClassPreview(classItem.id, classItem.accessible, classItem.requiresUpgrade)}
                 >
-                  <CardContent className="p-4 text-center">
-                    <div className={`w-16 h-16 rounded-full bg-gradient-to-r from-${classItem.color}-500 to-${classItem.color}-600 flex items-center justify-center text-white mx-auto mb-3`}>
+                  <CardContent className="p-4 text-center relative">
+                    {classItem.requiresUpgrade && (
+                      <div className="absolute top-2 right-2">
+                        <Lock className="w-4 h-4 text-gray-400" />
+                      </div>
+                    )}
+                    <div className={`w-16 h-16 rounded-full bg-gradient-to-r from-${classItem.color}-500 to-${classItem.color}-600 flex items-center justify-center text-white mx-auto mb-3 ${!classItem.accessible ? 'opacity-60' : ''}`}>
                       <GraduationCap className="w-8 h-8" />
                     </div>
-                    <h3 className="font-bold text-gray-900 mb-1">{classItem.name}</h3>
-                    <p className="text-xs text-gray-600 mb-3">{classItem.category}</p>
+                    <h3 className={`font-bold mb-1 ${classItem.accessible ? 'text-gray-900' : 'text-gray-500'}`}>
+                      {classItem.name}
+                    </h3>
+                    <p className={`text-xs mb-3 ${classItem.accessible ? 'text-gray-600' : 'text-gray-400'}`}>
+                      {classItem.category}
+                    </p>
+                    {classItem.requiresUpgrade && (
+                      <Badge variant="outline" className="text-xs mb-2 border-orange-300 text-orange-600">
+                        Upgrade Required
+                      </Badge>
+                    )}
                     <Button 
                       size="sm" 
-                      variant="outline" 
-                      className="text-xs"
+                      variant={classItem.accessible ? "outline" : "default"}
+                      className={`text-xs ${classItem.requiresUpgrade ? 'bg-orange-500 hover:bg-orange-600 text-white' : ''}`}
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleClassPreview(classItem.id)
+                        handleClassPreview(classItem.id, classItem.accessible, classItem.requiresUpgrade)
                       }}
                     >
-                      Preview
+                      {getButtonText(classItem.accessible, classItem.requiresUpgrade)}
+                      {getButtonIcon(classItem.accessible, classItem.requiresUpgrade)}
                     </Button>
                   </CardContent>
                 </Card>
@@ -256,33 +295,35 @@ export default function ClassesPage() {
           </div>
 
           {/* Call to Action */}
-          <div className="text-center">
-            <div className="bg-white rounded-lg shadow-lg p-8 max-w-3xl mx-auto">
-              <GraduationCap className="w-16 h-16 mx-auto mb-6 text-blue-600" />
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">Ready to Excel in Your Studies?</h2>
-              <p className="text-gray-600 mb-8 text-lg">
-                Join thousands of students who are achieving academic excellence with ZapUp's comprehensive learning programs. 
-                Start your journey to success today!
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button 
-                  size="lg" 
-                  onClick={() => router.push('/sign-up')}
-                  className="bg-blue-600 hover:bg-blue-700 px-8"
-                >
-                  <UserPlus className="w-5 h-5 mr-2" />
-                  Start Learning Free
-                </Button>
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  onClick={() => router.push('/sign-in')}
-                  className="border-blue-300 text-blue-800 hover:bg-blue-50 px-8"
-                >
-                  <LogIn className="w-5 h-5 mr-2" />
-                  Already have an account?
-                </Button>
-              </div>
+          <div className="text-center bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-12 text-white">
+            <h2 className="text-3xl font-bold mb-4">Ready to Start Learning?</h2>
+            <p className="text-xl opacity-90 mb-8 max-w-2xl mx-auto">
+              Join thousands of students who are already excelling with our comprehensive learning platform.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+              {!isSignedIn ? (
+                <>
+                  <Link href="/sign-up">
+                    <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 font-semibold">
+                      <UserPlus className="w-5 h-5 mr-2" />
+                      Start Free Trial
+                    </Button>
+                  </Link>
+                  <Link href="/sign-in">
+                    <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600 font-semibold">
+                      <LogIn className="w-5 h-5 mr-2" />
+                      Sign In
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <Link href="/pricing">
+                  <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 font-semibold">
+                    <Crown className="w-5 h-5 mr-2" />
+                    Upgrade Plan
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>

@@ -28,10 +28,11 @@ interface Question {
   difficulty: 'easy' | 'medium' | 'hard'
 }
 
-interface Section {
+export interface Section {
   id: string
   title: string
   questions: Question[]
+  questionCount?: number // Add optional questionCount property
 }
 
 interface Chapter {
@@ -48,6 +49,8 @@ export default function Class7MathematicsPage() {
   const [selectedChapter, setSelectedChapter] = useState<string | null>(null)
   const [selectedSection, setSelectedSection] = useState<string | null>(null)
   const [currentQuestion, setCurrentQuestion] = useState<number>(0)
+  const [sectionQuestions, setSectionQuestions] = useState<Question[]>([])
+  const [loadingSection, setLoadingSection] = useState(false)
 
   // Load chapters data from API
   useEffect(() => {
@@ -71,6 +74,33 @@ export default function Class7MathematicsPage() {
 
     loadQuestions()
   }, [])
+
+  // Load section questions when section is selected
+  const loadSectionQuestions = async (chapterId: string, sectionId: string) => {
+    try {
+      setLoadingSection(true)
+      setSectionQuestions([])
+      const response = await fetch(`/api/questions/class-7/mathematics?chapter=${encodeURIComponent(chapterId)}&section=${encodeURIComponent(sectionId)}`)
+      if (!response.ok) {
+        throw new Error('Failed to load section questions')
+      }
+      const data = await response.json()
+      setSectionQuestions(data.section?.questions || [])
+    } catch (err) {
+      console.error('Error loading section questions:', err)
+      setSectionQuestions([])
+    } finally {
+      setLoadingSection(false)
+    }
+  }
+
+  const handleSectionSelect = (sectionId: string) => {
+    setSelectedSection(sectionId)
+    setCurrentQuestion(0)
+    if (selectedChapter) {
+      loadSectionQuestions(selectedChapter, sectionId)
+    }
+  }
 
   const selectedChapterData = chaptersData.find(ch => ch.id === selectedChapter)
   const selectedSectionData = selectedChapterData?.sections.find(sec => sec.id === selectedSection)
@@ -236,28 +266,43 @@ export default function Class7MathematicsPage() {
             </div>
             
             <div className="grid grid-cols-1 gap-4">
-              {selectedChapterData?.sections.map((section) => (
-                <Card 
-                  key={section.id}
-                  className="bg-white border border-gray-200 hover:shadow-lg transition-all duration-200 cursor-pointer group"
-                  onClick={() => setSelectedSection(section.id)}
-                >
-                  <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-gray-100">
-                    <CardTitle className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-green-100 rounded-lg">
-                          <FileText className="w-5 h-5 text-green-600" />
+              {selectedChapterData?.sections.map((section, index) => {
+                // Different color schemes for sections
+                const colorSchemes = [
+                  { bg: 'bg-gradient-to-r from-blue-50 to-blue-100', border: 'border-blue-200', icon: 'bg-blue-100', iconText: 'text-blue-600', badge: 'bg-blue-100 text-blue-800 border-blue-200', hover: 'hover:from-blue-100 hover:to-blue-150' },
+                  { bg: 'bg-gradient-to-r from-green-50 to-green-100', border: 'border-green-200', icon: 'bg-green-100', iconText: 'text-green-600', badge: 'bg-green-100 text-green-800 border-green-200', hover: 'hover:from-green-100 hover:to-green-150' },
+                  { bg: 'bg-gradient-to-r from-purple-50 to-purple-100', border: 'border-purple-200', icon: 'bg-purple-100', iconText: 'text-purple-600', badge: 'bg-purple-100 text-purple-800 border-purple-200', hover: 'hover:from-purple-100 hover:to-purple-150' },
+                  { bg: 'bg-gradient-to-r from-orange-50 to-orange-100', border: 'border-orange-200', icon: 'bg-orange-100', iconText: 'text-orange-600', badge: 'bg-orange-100 text-orange-800 border-orange-200', hover: 'hover:from-orange-100 hover:to-orange-150' },
+                  { bg: 'bg-gradient-to-r from-pink-50 to-pink-100', border: 'border-pink-200', icon: 'bg-pink-100', iconText: 'text-pink-600', badge: 'bg-pink-100 text-pink-800 border-pink-200', hover: 'hover:from-pink-100 hover:to-pink-150' },
+                  { bg: 'bg-gradient-to-r from-indigo-50 to-indigo-100', border: 'border-indigo-200', icon: 'bg-indigo-100', iconText: 'text-indigo-600', badge: 'bg-indigo-100 text-indigo-800 border-indigo-200', hover: 'hover:from-indigo-100 hover:to-indigo-150' },
+                  { bg: 'bg-gradient-to-r from-teal-50 to-teal-100', border: 'border-teal-200', icon: 'bg-teal-100', iconText: 'text-teal-600', badge: 'bg-teal-100 text-teal-800 border-teal-200', hover: 'hover:from-teal-100 hover:to-teal-150' },
+                  { bg: 'bg-gradient-to-r from-emerald-50 to-emerald-100', border: 'border-emerald-200', icon: 'bg-emerald-100', iconText: 'text-emerald-600', badge: 'bg-emerald-100 text-emerald-800 border-emerald-200', hover: 'hover:from-emerald-100 hover:to-emerald-150' },
+                ]
+                const colorScheme = colorSchemes[index % colorSchemes.length]
+                
+                return (
+                  <Card 
+                    key={section.id}
+                    className={`border ${colorScheme.border} hover:shadow-lg transition-all duration-200 cursor-pointer group overflow-hidden`}
+                    onClick={() => handleSectionSelect(section.id)}
+                  >
+                    <CardHeader className={`${colorScheme.bg} ${colorScheme.hover} transition-all duration-200 border-b ${colorScheme.border}`}>
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className={`p-2 ${colorScheme.icon} rounded-lg`}>
+                            <FileText className={`w-5 h-5 ${colorScheme.iconText}`} />
+                          </div>
+                          <span className="text-gray-800 font-semibold">{section.title}</span>
                         </div>
-                        <span className="text-gray-800 font-semibold">{section.title}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge className="bg-green-100 text-green-800 border-green-200">{section.questions.length} questions</Badge>
-                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-green-600 transition-colors" />
-                      </div>
-                    </CardTitle>
-                  </CardHeader>
-                </Card>
-              ))}
+                        <div className="flex items-center space-x-2">
+                          <Badge className={colorScheme.badge}>{section.questionCount || section.questions.length} questions</Badge>
+                          <ChevronRight className={`w-5 h-5 text-gray-400 group-hover:${colorScheme.iconText} transition-colors`} />
+                        </div>
+                      </CardTitle>
+                    </CardHeader>
+                  </Card>
+                )
+              })}
             </div>
           </div>
         ) : (
@@ -277,26 +322,33 @@ export default function Class7MathematicsPage() {
                   {selectedSectionData?.title}
                 </h2>
                 <p className="text-sm text-gray-600">
-                  Mathematics Question {currentQuestion + 1} of {selectedSectionData?.questions.length}
+                  Mathematics Question {currentQuestion + 1} of {sectionQuestions.length}
                 </p>
               </div>
             </div>
 
-            {selectedSectionData && (
+            {loadingSection ? (
+              <div className="flex items-center justify-center min-h-96">
+                <div className="text-center">
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+                  <p className="text-gray-600">Loading questions...</p>
+                </div>
+              </div>
+            ) : sectionQuestions.length > 0 ? (
               <Card className="max-w-4xl bg-white border border-gray-200 shadow-lg">
                 <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg text-gray-900">
                       Mathematics Question {currentQuestion + 1}
                     </CardTitle>
-                    <Badge className={getDifficultyColor(selectedSectionData.questions[currentQuestion]?.difficulty || 'medium')}>
-                      {selectedSectionData.questions[currentQuestion]?.difficulty || 'medium'}
+                    <Badge className={getDifficultyColor(sectionQuestions[currentQuestion]?.difficulty || 'medium')}>
+                      {sectionQuestions[currentQuestion]?.difficulty || 'medium'}
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6 p-8 bg-white">
                   <div className="text-gray-800 text-lg leading-relaxed whitespace-pre-wrap">
-                    {selectedSectionData.questions[currentQuestion]?.text}
+                    {sectionQuestions[currentQuestion]?.text}
                   </div>
                   
                   <div className="flex justify-between items-center pt-6 border-t border-gray-200">
@@ -310,8 +362,8 @@ export default function Class7MathematicsPage() {
                     </Button>
                     
                     <Button 
-                      onClick={() => setCurrentQuestion(Math.min(selectedSectionData.questions.length - 1, currentQuestion + 1))}
-                      disabled={currentQuestion === selectedSectionData.questions.length - 1}
+                      onClick={() => setCurrentQuestion(Math.min(sectionQuestions.length - 1, currentQuestion + 1))}
+                      disabled={currentQuestion === sectionQuestions.length - 1}
                       className="bg-blue-600 hover:bg-blue-700 text-white"
                     >
                       Next
@@ -319,6 +371,10 @@ export default function Class7MathematicsPage() {
                   </div>
                 </CardContent>
               </Card>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-600">No questions available for this section.</p>
+              </div>
             )}
           </div>
         )}
@@ -326,11 +382,11 @@ export default function Class7MathematicsPage() {
         {/* Chatbot - only show when viewing a question */}
         {selectedSection && selectedSectionData && (
           <QuestionChatbot
-            currentQuestion={selectedSectionData.questions[currentQuestion]?.text || ''}
+            currentQuestion={sectionQuestions[currentQuestion]?.text || ''}
             chapterTitle={selectedChapterData?.title || ''}
             sectionTitle={selectedSectionData?.title || ''}
             questionNumber={currentQuestion + 1}
-            difficulty={selectedSectionData.questions[currentQuestion]?.difficulty || 'medium'}
+            difficulty={sectionQuestions[currentQuestion]?.difficulty || 'medium'}
           />
         )}
       </div>

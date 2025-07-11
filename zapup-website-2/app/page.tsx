@@ -194,84 +194,23 @@ export default function Home() {
 
       <main className="flex-grow">
         {/* Hero Section */}
-        <section className="relative bg-gradient-to-br from-blue-50 via-white to-indigo-50 overflow-hidden">
-          <div className="absolute inset-0 bg-[url('/images/pattern.png')] opacity-5"></div>
-          <div className="relative z-10 container mx-auto px-6 py-20 lg:py-32">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <div className="space-y-8">
-                <div className="space-y-4">
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 px-4 py-2">
-                    <Zap className="w-4 h-4 mr-2" />
-                    India's #1 Learning Platform
-                  </Badge>
-                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
-                    Empower Your Child's
-                    <span className="text-blue-600 block">Academic Journey</span>
-                  </h1>
-                  <p className="text-xl text-gray-600 leading-relaxed">
-                    Join over 50,000 students achieving academic excellence with our personalized learning platform. 
-                    Aligned with NCERT curriculum and powered by AI technology.
-                  </p>
-                </div>
-                
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Button 
-                    size="lg" 
-                    onClick={handlePreviewClick}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-semibold"
-                  >
-                    <PlayCircle className="w-5 h-5 mr-2" />
-                    Preview Classes & Subjects
-                  </Button>
-                  <Link href="/sign-up">
-                    <Button 
-                      size="lg" 
-                      variant="outline" 
-                      className="border-blue-300 text-blue-600 hover:bg-blue-50 px-8 py-4 text-lg font-semibold w-full sm:w-auto"
-                    >
-                      Start Free Trial
-                      <ArrowRight className="w-5 h-5 ml-2" />
-                    </Button>
-                  </Link>
-                </div>
-
-                <div className="flex items-center space-x-8 pt-4">
-                  <div className="flex items-center space-x-2">
-                    <div className="flex -space-x-2">
-                      {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="w-10 h-10 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full border-2 border-white flex items-center justify-center">
-                          <Users className="w-5 h-5 text-white" />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      <div className="font-semibold">50,000+ Students</div>
-                      <div>Learning with us</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                    ))}
-                    <span className="text-sm text-gray-600 ml-2">4.9/5 Rating</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="relative">
-                <div className="relative z-10">
-                  <Image
-                    src="/students-learning.png"
-                    alt="Students learning with ZapUp"
-                    width={600}
-                    height={500}
-                    className="rounded-2xl shadow-2xl"
-                    priority
-                  />
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-2xl blur-3xl transform translate-x-4 translate-y-4 -z-10"></div>
-              </div>
-            </div>
+        <section className="relative w-full h-[70vh] flex items-center justify-center overflow-hidden">
+          <img
+            src="/students-learning.png"
+            alt="Hero background"
+            className="absolute inset-0 w-full h-full object-cover object-center z-0"
+          />
+          <div className="absolute inset-0 hero-overlay-dark z-10" />
+          <div className="relative z-20 flex flex-col items-center justify-center w-full h-full text-center px-4">
+            <h1 className="text-white text-4xl md:text-5xl lg:text-6xl font-semibold mb-4 drop-shadow-lg">
+              Empowering the Next<br />
+              Generation of Thinkers and Achievers
+            </h1>
+            <div className="w-16 h-1 bg-white/70 rounded-full mx-auto mb-6" />
+            <p className="text-white/90 text-lg md:text-xl max-w-2xl mx-auto mb-8 drop-shadow">
+              A comprehensive learning platform aligned with your school textbooks<br />
+              and curriculum
+            </p>
           </div>
         </section>
 
@@ -402,17 +341,18 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Class Programs Section */}
-        <section className="py-20 bg-gray-50">
-          <div className="container mx-auto px-6">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                Class-Specific Programs
-              </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Tailored learning experiences for every grade level, from building foundations to mastering advanced concepts.
-              </p>
-            </div>
+          {/* Class Programs Section */}
+          <section id="classes" className="py-16 px-6 md:px-12 bg-gradient-to-r from-gray-50 to-blue-50">
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-light text-gray-900 mb-6">
+                  Programs for Every Grade
+                </h2>
+                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                  Choose the learning path that fits your academic journey. Each program is carefully designed 
+                  to match the specific needs and challenges of different educational stages.
+                </p>
+              </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {[
@@ -421,52 +361,86 @@ export default function Home() {
                   subtitle: "Classes 6-8",
                   description: "Build strong foundations with engaging content designed for young learners transitioning to middle school.",
                   image: "/children-learning-illustration.png",
-                  href: "/preview/classes-6-8"
+                  href: "/preview/classes-6-8",
+                  accessible: true, // Always accessible for preview
+                  highlight: "Foundation Building"
                 },
                 {
                   title: "Secondary School",
                   subtitle: "Classes 9-10",
                   description: "Comprehensive board exam preparation with detailed explanations and practice tests.",
                   image: "/secondary-school-illustration.png",
-                  href: "/preview/classes-9-10"
+                  href: "/preview/classes-9-10",
+                  accessible: true, // Always accessible for preview
+                  highlight: "Board Exam Prep"
                 },
                 {
                   title: "Higher Secondary",
                   subtitle: "Classes 11-12",
                   description: "Advanced concepts and competitive exam preparation for science, commerce, and humanities streams.",
                   image: "/higher-secondary-illustration.png",
-                  href: "/preview/classes-11-12"
+                  href: "/preview/classes-11-12",
+                  accessible: true, // Always accessible for preview
+                  highlight: "College Prep"
                 }
               ].map((program, index) => (
-                <Card key={index} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group bg-slate-900">
-                  <div className="relative h-48 overflow-hidden bg-white">
-                    <Image
-                      src={program.image}
-                      alt={program.title}
-                      fill
-                      className="object-contain group-hover:scale-105 transition-transform duration-300"
-                    />
+                <Card key={index} className="overflow-hidden hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white">
+                  <div className="h-48 overflow-hidden">
+                    {program.image ? (
+                      <Image
+                        src={program.image}
+                        alt={program.title}
+                        width={400}
+                        height={200}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                        <GraduationCap className="w-16 h-16 text-white opacity-80" />
+                      </div>
+                    )}
                   </div>
                   <CardContent className="p-6">
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="text-xl font-semibold text-white">{program.title}</h3>
-                        <p className="text-sm text-gray-400 font-medium">{program.subtitle}</p>
-                      </div>
-                      <p className="text-gray-300">{program.description}</p>
-                      <Link href={program.href}>
-                        <Button className="w-full group bg-blue-600 hover:bg-blue-700 text-white">
-                          Preview Program
-                          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                        </Button>
-                      </Link>
+                    <div className="flex items-center justify-between mb-3">
+                      <Badge className="bg-blue-100 text-blue-800 px-3 py-1">
+                        {program.highlight}
+                      </Badge>
                     </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{program.title}</h3>
+                    <p className="text-gray-700 font-medium mb-3">{program.subtitle}</p>
+                    <p className="text-gray-600 mb-6 leading-relaxed">{program.description}</p>
+                    <Button 
+                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-md hover:shadow-lg transition-all duration-200"
+                      onClick={() => router.push(program.href)}
+                    >
+                      Explore Program
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
                   </CardContent>
                 </Card>
               ))}
             </div>
-          </div>
-        </section>
+
+            {/* Quick Access to Specific Classes */}
+            <div className="mt-12 text-center">
+              <h3 className="text-2xl font-light text-gray-900 mb-6">Or Browse by Class</h3>
+              <div className="flex flex-wrap justify-center gap-3">
+                {['Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12'].map((className, index) => (
+                  <Button
+                    key={className}
+                    variant="outline"
+                    size="sm"
+                    className="border-blue-300 text-blue-700 hover:bg-blue-50 transition-colors"
+                    onClick={handlePreviewClick}
+                  >
+                    {className}
+                  </Button>
+                ))}
+              </div>
+              <p className="text-gray-500 text-sm mt-4">Preview content available for all classes</p>
+            </div>
+            </div>
+          </section>
 
         {/* Testimonials Section */}
         <section className="py-20 bg-gray-50">
@@ -506,51 +480,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="py-20 bg-gradient-to-r from-blue-600 to-blue-700">
-          <div className="container mx-auto px-6 text-center">
-            <div className="max-w-4xl mx-auto space-y-8">
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-                Ready to Transform Your Child's Learning Journey?
-              </h2>
-              <p className="text-xl text-blue-100 mb-8">
-                Join thousands of students who are already achieving academic excellence with ZapUp. 
-                Start your free trial today and experience the difference.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/sign-up">
-                  <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-4 text-lg font-semibold">
-                    <GraduationCap className="w-5 h-5 mr-2" />
-                    Start Free Trial
-                  </Button>
-                </Link>
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  onClick={handlePreviewClick}
-                  className="border-white text-white hover:bg-white hover:text-blue-600 px-8 py-4 text-lg font-semibold"
-                >
-                  <PlayCircle className="w-5 h-5 mr-2" />
-                  Watch Demo
-                </Button>
-              </div>
-              <div className="flex justify-center items-center space-x-8 pt-8">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-white">30-Day</div>
-                  <div className="text-blue-200">Free Trial</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-white">No</div>
-                  <div className="text-blue-200">Hidden Fees</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-white">24/7</div>
-                  <div className="text-blue-200">Support</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+
       </main>
 
       {/* Footer */}

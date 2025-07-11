@@ -1,8 +1,17 @@
+// zapup-website-2/components/QuestionChatbot.tsx
+// Question chatbot with theme-matched styling and bubble prompts
+// Provides study assistance with clean, bubble-based prompt selection
+
 import React, { useState, useRef, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { useUserPreferences } from '@/contexts/UserPreferencesContext'
+import { SUBSCRIPTION_FEATURES } from '@/lib/subscriptions'
+import { CHATBOT_PROMPTS, PROMPT_CATEGORIES, ChatbotPrompt } from '@/lib/chatbot-prompts'
+import { QuestionUsageDisplay } from './QuestionUsageDisplay'
+import { PhotoUpload } from './PhotoUpload'
 import { 
   Send, 
   Bot, 
@@ -11,7 +20,11 @@ import {
   Maximize2, 
   X,
   MessageCircle,
-  Loader2
+  Loader2,
+  ArrowLeft,
+  Crown,
+  Camera,
+  Image as ImageIcon
 } from 'lucide-react'
 
 interface Message {
@@ -41,50 +54,89 @@ export function QuestionChatbot({
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showPromptSelection, setShowPromptSelection] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [showPhotoUpload, setShowPhotoUpload] = useState(false)
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const { preferences } = useUserPreferences()
+
+  const subscriptionFeatures = SUBSCRIPTION_FEATURES[preferences.subscriptionType]
+  const isLimitedChatbot = subscriptionFeatures.chatbotMode === 'limited'
+  const hasFullChatbot = subscriptionFeatures.chatbotMode === 'full'
+  const canUploadImages = subscriptionFeatures.imageUpload
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
   useEffect(() => {
-    scrollToBottom()
+    // Only auto-scroll for user messages, not LLM responses
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1]
+      if (lastMessage.role === 'user') {
+        scrollToBottom()
+      }
+    }
   }, [messages])
 
   // Initialize with a welcome message when chatbot opens
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      const welcomeMessage: Message = {
-        id: Date.now().toString(),
-        role: 'assistant',
-        content: `Hi there! 👋 I'm your Math Helper. I'm here to chat and help you with any questions you have!
+      let welcomeContent = ''
+      
+      if (isLimitedChatbot) {
+        welcomeContent = `Hi there! 👋 I'm your Study Helper. I'm here to help you with questions about this problem!
+
+I can help you with common questions about:
+• Understanding what the question is asking
+• Getting hints on how to solve it
+• Checking your work
+• Understanding the concepts
+
+Choose from the question bubbles below to get started! 😊`
+      } else {
+        welcomeContent = `Hi there! 👋 I'm your Study Helper. I'm here to help you with your educational journey!
 
 I can help you with:
 • This current question if you're stuck
-• Explaining math concepts
-• General questions about mathematics
-• Or just have a friendly chat!
+• Explaining concepts from any subject
+• Math, Science, English, Social Studies topics
+• Study methods and learning strategies
 
-Feel free to say hi or ask me anything! 😊`,
+📚 I focus only on educational topics to help you learn better. You can ask me anything related to your studies or choose from the question bubbles below! 😊`
+      }
+
+      const welcomeMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: welcomeContent,
         timestamp: new Date()
       }
       setMessages([welcomeMessage])
+      
+      // For limited chatbot, show prompt selection by default
+      if (isLimitedChatbot) {
+        setShowPromptSelection(true)
+      }
     }
-  }, [isOpen, messages.length, difficulty, sectionTitle])
+  }, [isOpen, messages.length, isLimitedChatbot])
 
-  const sendMessage = async () => {
-    if (!inputValue.trim() || isLoading) return
+  const sendMessage = async (messageText?: string, promptId?: string) => {
+    const messageToSend = messageText || inputValue.trim()
+    if (!messageToSend || isLoading) return
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: inputValue.trim(),
+      content: messageToSend,
       timestamp: new Date()
     }
 
     setMessages(prev => [...prev, userMessage])
     setInputValue('')
     setIsLoading(true)
+    setShowPromptSelection(false)
 
     try {
       const response = await fetch('/api/chatbot/question-help', {
@@ -98,13 +150,23 @@ Feel free to say hi or ask me anything! 😊`,
           sectionTitle,
           questionNumber,
           difficulty,
-          userMessage: inputValue.trim(),
-          conversationHistory: messages.slice(-6) // Last 6 messages for context
+          userMessage: messageToSend,
+          conversationHistory: messages.slice(-6), // Last 6 messages for context
+          promptId,
+          isHardcodedPrompt: !!promptId
         }),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to get response from chatbot')
+        const errorData = await response.json()
+        if (errorData.requiresPromptSelection) {
+          setShowPromptSelection(true)
+          throw new Error('Please select from the available question options.')
+        }
+        if (errorData.content_filtered) {
+          throw new Error('🎓 ' + errorData.error)
+        }
+        throw new Error(errorData.error || 'Failed to get response from chatbot')
       }
 
       const data = await response.json()
@@ -117,18 +179,36 @@ Feel free to say hi or ask me anything! 😊`,
       }
 
       setMessages(prev => [...prev, assistantMessage])
+
+      // Trigger usage refresh
+      if (typeof window !== 'undefined') {
+        // Dispatch custom event
+        window.dispatchEvent(new CustomEvent('questionAsked'))
+        
+        // Also call global refresh function if available
+        if ((window as any).refreshQuestionUsage) {
+          setTimeout(() => {
+            (window as any).refreshQuestionUsage()
+          }, 1000)
+        }
+      }
     } catch (error) {
       console.error('Chatbot error:', error)
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again or rephrase your question.',
+        content: error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again or choose from the available question options.',
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handlePromptSelect = (prompt: ChatbotPrompt) => {
+    sendMessage(prompt.label, prompt.id)
+    setSelectedCategory(null)
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -138,125 +218,276 @@ Feel free to say hi or ask me anything! 😊`,
     }
   }
 
-  if (!isOpen) {
+  const handleImageUploaded = (imageData: string, imageUrl: string) => {
+    // Add image message to chat
+    const imageMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: `📷 Uploaded question image`,
+      timestamp: new Date()
+    }
+    setMessages(prev => [...prev, imageMessage])
+  }
+
+  const handleImageAnalysis = async (analysis: string) => {
+    setIsAnalyzingImage(false)
+    setShowPhotoUpload(false)
+    
+    // Add AI analysis as assistant message
+    const analysisMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: analysis,
+      timestamp: new Date()
+    }
+    setMessages(prev => [...prev, analysisMessage])
+
+    // Trigger usage refresh for photo analysis
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('questionAsked'))
+      if ((window as any).refreshQuestionUsage) {
+        setTimeout(() => {
+          (window as any).refreshQuestionUsage()
+        }, 1000)
+      }
+    }
+  }
+
+  const renderPromptSelection = () => {
+    if (selectedCategory) {
+      const categoryPrompts = CHATBOT_PROMPTS.filter(p => p.category === selectedCategory)
+      const categoryInfo = PROMPT_CATEGORIES[selectedCategory as keyof typeof PROMPT_CATEGORIES]
+      
+      return (
+        <div className="p-4 space-y-4">
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <div>
+              <h4 className="font-medium text-gray-900">{categoryInfo.label}</h4>
+              <p className="text-sm text-gray-600">{categoryInfo.description}</p>
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            {categoryPrompts.map((prompt) => (
+              <div
+                key={prompt.id}
+                onClick={() => handlePromptSelect(prompt)}
+                className="bg-green-50 hover:bg-green-100 border border-green-200 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md"
+              >
+                <span className="text-sm text-green-800">{prompt.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
     return (
-      <Button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg z-50"
-        size="icon"
-      >
-        <MessageCircle className="h-6 w-6" />
-      </Button>
+      <div className="p-4 space-y-6">
+        <div className="text-center">
+          <h4 className="font-medium text-gray-900 mb-2">How can I help you?</h4>
+          <p className="text-sm text-gray-600">Choose a category to see common questions:</p>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3">
+          {Object.entries(PROMPT_CATEGORIES).map(([key, category]) => (
+            <div
+              key={key}
+              onClick={() => setSelectedCategory(key)}
+              className="bg-gradient-to-br from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 border border-green-200 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md flex flex-col items-center space-y-2"
+            >
+              <span className="text-2xl">{category.icon}</span>
+              <span className="text-xs text-center font-medium text-green-800">{category.label}</span>
+            </div>
+          ))}
+        </div>
+        
+        {hasFullChatbot && (
+          <div className="pt-2 border-t border-gray-200">
+            <div
+              onClick={() => setShowPromptSelection(false)}
+              className="bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-2xl p-3 cursor-pointer transition-all duration-200 text-center"
+            >
+              <span className="text-sm text-gray-700">Or ask me anything directly</span>
+            </div>
+          </div>
+        )}
+      </div>
     )
   }
 
+  // Don't show chatbot if user doesn't have access
+  if (!subscriptionFeatures.chatbot) {
+    return null
+  }
+
   return (
-    <Card className={`fixed bottom-6 right-6 z-50 bg-white border shadow-xl transition-all duration-300 ${
-      isMinimized ? 'w-80 h-16' : 'w-96 h-[500px]'
+    <Card className={`fixed bottom-4 right-4 w-96 z-50 shadow-lg transition-all duration-300 bg-white ${
+      isOpen ? 'h-[600px]' : 'h-auto'
     }`}>
-      <CardHeader className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+      <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 rounded-t-lg">
         <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center space-x-2">
+            <Bot className="h-5 w-5" />
+            <span className="text-lg font-semibold">Study Helper</span>
+          </CardTitle>
+          
           <div className="flex items-center space-x-2">
-            <Bot className="h-5 w-5 text-blue-600" />
-            <CardTitle className="text-sm text-gray-900">Math Helper</CardTitle>
-            <Badge variant="secondary" className="text-xs">
+            <div className="bg-white/20 text-white px-2 py-1 rounded-lg text-xs font-medium">
               Q{questionNumber}
-            </Badge>
-          </div>
-          <div className="flex items-center space-x-1">
+            </div>
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6"
-              onClick={() => setIsMinimized(!isMinimized)}
+              onClick={() => setIsOpen(!isOpen)}
+              className="h-8 w-8 text-white hover:bg-green-500"
             >
-              {isMinimized ? <Maximize2 className="h-3 w-3" /> : <Minimize2 className="h-3 w-3" />}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              onClick={() => setIsOpen(false)}
-            >
-              <X className="h-3 w-3" />
+              {isOpen ? <X className="h-4 w-4" /> : <MessageCircle className="h-4 w-4" />}
             </Button>
           </div>
         </div>
       </CardHeader>
 
-      {!isMinimized && (
-        <CardContent className="p-0 flex flex-col h-[calc(500px-80px)]">
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-lg p-3 ${
-                    message.role === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-900'
-                  }`}
+      {isOpen && !isMinimized && (
+        <CardContent className="p-0 flex flex-col h-[calc(600px-80px)]">
+          {/* Usage Display for Explorer Plan */}
+          <QuestionUsageDisplay 
+            subjectId="mathematics" 
+            classId="7" 
+            showInChatbot={true} 
+          />
+          
+          {showPromptSelection ? (
+            renderPromptSelection()
+          ) : showPhotoUpload ? (
+            <div className="p-4">
+              <div className="flex items-center space-x-2 mb-4">
+                <button
+                  onClick={() => setShowPhotoUpload(false)}
+                  className="p-2 rounded-full hover:bg-gray-100 transition-colors"
                 >
-                  <div className="flex items-start space-x-2">
-                    {message.role === 'assistant' && (
-                      <Bot className="h-4 w-4 mt-0.5 text-blue-600" />
-                    )}
-                    {message.role === 'user' && (
-                      <User className="h-4 w-4 mt-0.5 text-white" />
-                    )}
-                    <div className="flex-1">
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                      <p className={`text-xs mt-1 ${
-                        message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
-                      }`}>
-                        {message.timestamp.toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
-                      </p>
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
+                <h4 className="font-medium text-gray-900">Upload Question Image</h4>
+              </div>
+              
+              <PhotoUpload
+                onImageUploaded={handleImageUploaded}
+                onAnalysisResult={handleImageAnalysis}
+                isAnalyzing={isAnalyzingImage}
+              />
+            </div>
+          ) : (
+            <>
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[80%] rounded-2xl p-3 ${
+                        message.role === 'user'
+                          ? 'bg-green-600 text-white'
+                          : 'bg-gray-100 text-gray-900'
+                      }`}
+                    >
+                      <div className="flex items-start space-x-2">
+                        {message.role === 'assistant' && (
+                          <Bot className="h-4 w-4 mt-0.5 text-green-600" />
+                        )}
+                        {message.role === 'user' && (
+                          <User className="h-4 w-4 mt-0.5 text-white" />
+                        )}
+                        <div className="flex-1">
+                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                          <p className={`text-xs mt-1 ${
+                            message.role === 'user' ? 'text-green-100' : 'text-gray-500'
+                          }`}>
+                            {message.timestamp.toLocaleTimeString([], { 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            })}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ))}
+                
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-gray-100 rounded-2xl p-3 flex items-center space-x-2">
+                      <Bot className="h-4 w-4 text-green-600" />
+                      <Loader2 className="h-4 w-4 animate-spin text-green-600" />
+                      <span className="text-sm text-gray-600">Thinking...</span>
+                    </div>
+                  </div>
+                )}
+                
+                <div ref={messagesEndRef} />
               </div>
-            ))}
-            
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-gray-100 rounded-lg p-3 flex items-center space-x-2">
-                  <Bot className="h-4 w-4 text-blue-600" />
-                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                  <span className="text-sm text-gray-600">Thinking...</span>
-                </div>
-              </div>
-            )}
-            
-            <div ref={messagesEndRef} />
-          </div>
 
-          {/* Input */}
-          <div className="p-4 border-t bg-gray-50">
-            <div className="flex space-x-2">
-              <Input
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ask about this question..."
-                className="flex-1"
-                disabled={isLoading}
-              />
-              <Button
-                onClick={sendMessage}
-                disabled={!inputValue.trim() || isLoading}
-                size="icon"
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+              {/* Action area for both limited and full chatbot */}
+              <div className="border-t bg-gray-50">
+                {/* Action buttons */}
+                <div className="px-4 py-3 space-y-2">
+                  {/* Quick questions bubble */}
+                  <div
+                    onClick={() => setShowPromptSelection(true)}
+                    className="bg-green-50 hover:bg-green-100 border border-green-200 rounded-2xl p-3 cursor-pointer transition-all duration-200 text-center"
+                  >
+                    <span className="text-sm text-green-800">Ask another question</span>
+                  </div>
+
+                  {/* Photo upload bubble - only for Achiever/Genius+ */}
+                  {canUploadImages && (
+                    <div
+                      onClick={() => setShowPhotoUpload(true)}
+                      className="bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-2xl p-3 cursor-pointer transition-all duration-200 text-center"
+                    >
+                      <div className="flex items-center justify-center space-x-2">
+                        <Camera className="w-4 h-4 text-purple-700" />
+                        <span className="text-sm text-purple-800">Upload question image</span>
+                        <Crown className="w-4 h-4 text-purple-700" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Input - only show for full chatbot mode */}
+                {hasFullChatbot && (
+                  <div className="px-4 pb-4">
+                    <div className="flex space-x-2">
+                      <Input
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="Ask about this question..."
+                        className="flex-1"
+                        disabled={isLoading}
+                      />
+                      <Button
+                        onClick={() => sendMessage()}
+                        disabled={!inputValue.trim() || isLoading}
+                        size="icon"
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </CardContent>
       )}
     </Card>

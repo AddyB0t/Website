@@ -8,7 +8,8 @@ export const SUBSCRIPTION_FEATURES = {
     personalizedExplanations: false,
     progressTracking: false,
     parentalEmail: false,
-    chatbot: false,
+    chatbot: true,
+    chatbotMode: "limited", // limited = hardcoded prompts only
     examMode: false,
     mockTests: false,
     imageUpload: false,
@@ -27,6 +28,7 @@ export const SUBSCRIPTION_FEATURES = {
     progressTracking: true,
     parentalEmail: true,
     chatbot: true,
+    chatbotMode: "limited", // limited = hardcoded prompts only
     examMode: false,
     mockTests: false,
     imageUpload: false,
@@ -45,6 +47,7 @@ export const SUBSCRIPTION_FEATURES = {
     progressTracking: true,
     parentalEmail: true,
     chatbot: true,
+    chatbotMode: "limited", // limited = hardcoded prompts only
     examMode: true,
     mockTests: true,
     imageUpload: true,
@@ -63,6 +66,7 @@ export const SUBSCRIPTION_FEATURES = {
     progressTracking: true,
     parentalEmail: true,
     chatbot: true,
+    chatbotMode: "full", // full = hardcoded prompts + free chat
     examMode: true,
     mockTests: true,
     imageUpload: true,
