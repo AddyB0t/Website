@@ -151,7 +151,7 @@ export function PhotoUpload({
       {/* Subscription Badge */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-gray-900">Upload Question Image</h3>
-        <Badge className="bg-purple-100 text-purple-800 text-xs">
+        <Badge className="bg-blue-100 text-blue-800 text-xs">
           <Crown className="w-3 h-3 mr-1" />
           Premium Feature
         </Badge>
@@ -162,15 +162,15 @@ export function PhotoUpload({
         <Card 
           className={`border-2 border-dashed transition-all duration-200 ${
             dragOver 
-              ? 'border-green-400 bg-green-50' 
-              : 'border-gray-300 hover:border-green-400'
+              ? 'border-blue-400 bg-blue-50' 
+              : 'border-gray-300 hover:border-blue-400'
           }`}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
         >
-          <CardContent className="p-8 text-center">
-            <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <CardContent className="p-8 text-center bg-gray-50 rounded-lg">
+            <ImageIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Upload Question Image
             </h3>
@@ -182,7 +182,7 @@ export function PhotoUpload({
               {/* Camera Button */}
               <Button
                 onClick={() => cameraInputRef.current?.click()}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3"
               >
                 <Camera className="w-4 h-4 mr-2" />
                 Take Photo
@@ -192,7 +192,7 @@ export function PhotoUpload({
               <Button
                 onClick={() => fileInputRef.current?.click()}
                 variant="outline"
-                className="border-green-500 text-green-700 hover:bg-green-50"
+                className="border-blue-500 text-blue-700 hover:bg-blue-50 px-6 py-3"
               >
                 <Upload className="w-4 h-4 mr-2" />
                 Upload File
@@ -228,7 +228,7 @@ export function PhotoUpload({
               <Button
                 onClick={analyzeImage}
                 disabled={isAnalyzing}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3"
               >
                 {isAnalyzing ? (
                   <>

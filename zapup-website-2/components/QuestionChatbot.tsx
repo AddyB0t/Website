@@ -367,14 +367,14 @@ I can help you with:
             renderPromptSelection()
           ) : showPhotoUpload ? (
             <div className="p-4">
-              <div className="flex items-center space-x-2 mb-4">
+              <div className="flex items-center space-x-3 mb-4 pb-3 border-b border-gray-200">
                 <button
                   onClick={() => setShowPhotoUpload(false)}
-                  className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  className="p-2 rounded-full hover:bg-blue-50 transition-colors border border-blue-200"
                 >
-                  <ArrowLeft className="h-4 w-4" />
+                  <ArrowLeft className="h-4 w-4 text-blue-600" />
                 </button>
-                <h4 className="font-medium text-gray-900">Upload Question Image</h4>
+                <h4 className="font-semibold text-gray-900">Upload Question Image</h4>
               </div>
               
               <PhotoUpload

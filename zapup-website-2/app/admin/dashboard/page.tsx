@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Users, Settings, TestTube, Shield } from 'lucide-react';
+import { Users, Settings, TestTube, Shield, Upload, BookOpen } from 'lucide-react';
+import { BookUploadForm } from '@/components/BookUploadForm';
 
 type AdminUser = {
   user_id: string;
@@ -24,9 +25,12 @@ export default function AdminDashboard() {
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<string>('explorer');
+  const [showUploadForm, setShowUploadForm] = useState(false);
+  const [uploadedBooks, setUploadedBooks] = useState<any[]>([]);
 
   useEffect(() => {
     fetchUsers();
+    fetchUploadedBooks();
   }, []);
 
   async function fetchUsers() {
@@ -39,6 +43,16 @@ export default function AdminDashboard() {
       setUsers([]);
     }
     setLoading(false);
+  }
+
+  async function fetchUploadedBooks() {
+    try {
+      const res = await fetch('/api/admin/state-school-books');
+      const data = await res.json();
+      setUploadedBooks(data.books || []);
+    } catch (e) {
+      setUploadedBooks([]);
+    }
   }
 
   async function updateUserSubscription(userId: string, newPlan: string) {
@@ -125,6 +139,67 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Book Upload Section */}
+      <Card className="mb-6 bg-white border border-gray-200">
+        <CardHeader className="bg-gradient-to-r from-orange-50 to-red-50 border-b border-gray-100">
+          <CardTitle className="flex items-center justify-between text-gray-800">
+            <div className="flex items-center space-x-2">
+              <BookOpen className="w-5 h-5 text-orange-600" />
+              <span>Book Management</span>
+            </div>
+            <Button 
+              onClick={() => setShowUploadForm(true)}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Upload Book
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="text-center py-8">
+            <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">State-School-Class-Subject Books</h3>
+            <p className="text-gray-600 mb-4">
+              Upload and manage books organized by state, school, class, and subject
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">{uploadedBooks.length}</div>
+                <div className="text-sm text-gray-600">Total Books</div>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">
+                  {new Set(uploadedBooks.map(book => book.state)).size}
+                </div>
+                <div className="text-sm text-gray-600">States Covered</div>
+              </div>
+              <div className="bg-purple-50 p-4 rounded-lg">
+                <div className="text-2xl font-bold text-purple-600">
+                  {new Set(uploadedBooks.map(book => book.subject_id)).size}
+                </div>
+                <div className="text-sm text-gray-600">Subjects Available</div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Upload Form Modal */}
+      {showUploadForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <BookUploadForm 
+              onUploadComplete={(book) => {
+                setUploadedBooks(prev => [book, ...prev])
+                setShowUploadForm(false)
+              }}
+              onClose={() => setShowUploadForm(false)}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Feature Testing Section */}
       <Card className="mb-6 bg-white border border-gray-200">
