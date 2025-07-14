@@ -118,7 +118,7 @@ const pricingTiers = [
       'Exam-mode: AI adapts questions based on previous performance',
       'AI-generated mock tests (subject-wise)',
       'Image upload for handwritten questions',
-      'Audio explanations (for language or weak readers)'
+      'Audio explanations (Coming Soon)'
     ],
     highlights: [
       'Multi-class access',
@@ -143,8 +143,9 @@ const pricingTiers = [
     color: 'from-amber-500 to-orange-600',
     borderColor: 'border-amber-200',
     buttonVariant: 'default' as const,
-    buttonText: 'Choose Genius+',
+    buttonText: 'Coming Soon',
     popular: false,
+    comingSoon: true,
     features: [
       'Includes all Achiever features +',
       'Homework auto-check + suggestions',
@@ -600,8 +601,15 @@ export default function PricingPage() {
                       <ul className="space-y-3">
                         {tier.features.map((feature, index) => (
                           <li key={index} className="flex items-start space-x-3">
-                            <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                            <span className="text-sm text-gray-700 leading-relaxed">{feature}</span>
+                            <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 ${feature.includes('Coming Soon') ? 'text-gray-300' : 'text-green-500'}`} />
+                            <span className="text-sm text-gray-700 leading-relaxed">
+                              {feature}
+                              {feature.includes('Coming Soon') && (
+                                <span className="ml-2 px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded">
+                                  Coming Soon
+                                </span>
+                              )}
+                            </span>
                           </li>
                         ))}
                       </ul>
