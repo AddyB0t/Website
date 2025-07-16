@@ -112,7 +112,7 @@ export function ClassroomLayout({
                     asChild
                     className="bg-blue-600 hover:bg-blue-700 text-white border-0 shadow-md hover:shadow-lg group/btn transition-all duration-200"
                   >
-                    <Link href={`/questions/${subject.id}`} className="flex items-center">
+                    <Link href={`/classroom/${subject.id}`} className="flex items-center">
                       <span>Explore</span>
                       <ChevronRight className="w-4 h-4 ml-1 group-hover/btn:translate-x-1 transition-transform" />
                     </Link>

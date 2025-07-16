@@ -44,9 +44,8 @@ export default function Home() {
   }
 
   const handleSubjectClick = (subjectName: string) => {
-    // Convert subject name to URL-friendly format
-    const subjectSlug = subjectName.toLowerCase().replace(/\s+/g, '-')
-    router.push(`/classroom/${subjectSlug}`)
+    // Redirect to classes page to choose learning path
+    router.push('/classes')
   }
 
   const features = [
