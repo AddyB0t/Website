@@ -12,7 +12,9 @@ CREATE TABLE IF NOT EXISTS user_preferences (
   class_level VARCHAR(20) CHECK (class_level IN ('6', '7', '8', '9', '10', '11', '12')),
   stream VARCHAR(20) CHECK (stream IN ('Science', 'Commerce', 'Arts')), -- Only for classes 11-12
   state VARCHAR(100), -- Indian state selection
-  school VARCHAR(255), -- Selected school from state's top schools
+  city VARCHAR(100), -- City selection from the chosen state
+  board_type VARCHAR(50) CHECK (board_type IN ('CBSE', 'ICSE', 'State Board', 'IB', 'Cambridge', 'Other')), -- Educational board type
+  school VARCHAR(255), -- Selected school from state, city, and board type
   profile_picture_url TEXT, -- URL to stored profile picture
   profile_picture_filename VARCHAR(255), -- Original filename
   profile_picture_size INTEGER, -- File size in bytes
@@ -35,6 +37,14 @@ CREATE POLICY "Users can delete own preferences" ON user_preferences FOR DELETE 
 CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON user_preferences(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_preferences_class_stream ON user_preferences(class_level, stream);
 CREATE INDEX IF NOT EXISTS idx_user_preferences_state ON user_preferences(state);
+CREATE INDEX IF NOT EXISTS idx_user_preferences_city ON user_preferences(city);
+CREATE INDEX IF NOT EXISTS idx_user_preferences_board_type ON user_preferences(board_type);
+CREATE INDEX IF NOT EXISTS idx_user_preferences_school ON user_preferences(school);
+
+-- Composite indexes for common queries in the new workflow
+CREATE INDEX IF NOT EXISTS idx_user_preferences_state_city ON user_preferences(state, city);
+CREATE INDEX IF NOT EXISTS idx_user_preferences_city_board_type ON user_preferences(city, board_type);
+CREATE INDEX IF NOT EXISTS idx_user_preferences_state_city_board ON user_preferences(state, city, board_type);
 
 -- Add trigger for updating timestamps
 CREATE TRIGGER update_user_preferences_timestamp BEFORE UPDATE ON user_preferences

@@ -74,7 +74,7 @@ export default function SignInPage() {
                   redirectUrl="/profile"
                   signUpUrl="/sign-up"
                   afterSignInUrl="/profile"
-                  afterSignUpUrl="/"
+                  afterSignUpUrl="/profile"
                   appearance={{
                     elements: {
                       formButtonPrimary: 

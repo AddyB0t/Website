@@ -14,11 +14,14 @@ import {
   Calendar,
   BookMarked,
   User,
+  Loader2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AppLayout } from "@/components/AppLayout"
+import { useUserPreferences } from "@/contexts/UserPreferencesContext"
+import { canAccessClass } from "@/lib/access-control"
 
 // Subject card component
 interface SubjectCardProps {
@@ -52,6 +55,63 @@ function SubjectCard({ icon, title, description, color, href }: SubjectCardProps
 }
 
 export default function Class7Classroom() {
+  const router = useRouter()
+  const { preferences, isLoading: isPreferencesLoading, isProfileComplete } = useUserPreferences()
+  
+  // Check if user can access this class
+  useEffect(() => {
+    if (!isPreferencesLoading) {
+      if (!isProfileComplete()) {
+        router.push('/profile')
+        return
+      }
+      
+      // Check if user can access class 7 based on subscription type
+      if (!canAccessClass('7', {
+        currentClass: preferences.currentClass,
+        subscriptionType: preferences.subscriptionType
+      })) {
+        // Redirect to user's accessible class
+        router.push(`/classroom/class-${preferences.currentClass}`)
+        return
+      }
+    }
+  }, [preferences, isPreferencesLoading, isProfileComplete, router])
+
+  // Show loading while checking preferences
+  if (isPreferencesLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-2" />
+            <p className="text-gray-600">Loading classroom...</p>
+          </div>
+        </div>
+      </AppLayout>
+    )
+  }
+
+  // Show complete profile message if profile is incomplete
+  if (!isProfileComplete()) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-8 text-center">
+              <User className="w-12 h-12 text-blue-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Complete Your Profile</h3>
+              <p className="text-gray-600 mb-4">Please complete your profile to access the classroom.</p>
+              <Button onClick={() => router.push('/profile')}>
+                Complete Profile
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </AppLayout>
+    )
+  }
+
   const subjects = {
     mathematics: {
       icon: <Calculator className="w-6 h-6" />,

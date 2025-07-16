@@ -19,12 +19,12 @@ Go to **Account Portal** → **Redirects** tab and set:
 
 **After sign-up fallback**:
 ```
-http://localhost:3000/
+http://localhost:3000/profile
 ```
 
 **After sign-in fallback**:
 ```
-http://localhost:3000/classroom
+http://localhost:3000/profile
 ```
 
 **After logo click**:

@@ -1,5 +1,6 @@
-// States and Schools Data for India
-// Top 10 schools for each state in India
+// Website/zapup-website-2/lib/states-schools-data.ts
+// States and Schools Data for India with enhanced city and board support
+// Top 10 schools for each state in India organized by cities and board types
 
 export interface School {
   name: string;
@@ -446,4 +447,38 @@ export const getSchoolsByState = (stateName: string): School[] => {
 
 export const getAllSchools = (): School[] => {
   return INDIAN_STATES_SCHOOLS.flatMap(state => state.schools);
+};
+
+// New helper functions for the state → city → board → school workflow
+
+export const getCitiesByState = (stateName: string): string[] => {
+  const schools = getSchoolsByState(stateName);
+  const cities = [...new Set(schools.map(school => school.city))];
+  return cities.sort();
+};
+
+export const getBoardsByStateAndCity = (stateName: string, cityName: string): string[] => {
+  const schools = getSchoolsByState(stateName);
+  const citySchools = schools.filter(school => school.city === cityName);
+  const boards = [...new Set(citySchools.map(school => school.board))];
+  return boards.sort();
+};
+
+export const getSchoolsByStateAndCityAndBoard = (stateName: string, cityName: string, boardType: string): School[] => {
+  const schools = getSchoolsByState(stateName);
+  return schools.filter(school => 
+    school.city === cityName && school.board === boardType
+  );
+};
+
+export const getAllBoardTypes = (): string[] => {
+  const allSchools = getAllSchools();
+  const boards = [...new Set(allSchools.map(school => school.board))];
+  return boards.sort();
+};
+
+export const getAllCities = (): string[] => {
+  const allSchools = getAllSchools();
+  const cities = [...new Set(allSchools.map(school => school.city))];
+  return cities.sort();
 }; 

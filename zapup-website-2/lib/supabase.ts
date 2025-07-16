@@ -36,6 +36,8 @@ export type UserPreferences = {
   class_level?: '6' | '7' | '8' | '9' | '10' | '11' | '12';
   stream?: 'Science' | 'Commerce' | 'Arts';
   state?: string;
+  city?: string;
+  board_type?: 'CBSE' | 'ICSE' | 'State Board' | 'IB' | 'Cambridge' | 'Other';
   school?: string;
   profile_picture_url?: string;
   profile_picture_filename?: string;

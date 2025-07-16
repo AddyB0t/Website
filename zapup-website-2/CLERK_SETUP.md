@@ -16,8 +16,8 @@ CLERK_SECRET_KEY=sk_test_your-secret-key-here
 # Clerk Configuration URLs
 NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
 NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/classroom
-NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/profile
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/profile
 ```
 
 ## Clerk Dashboard Configuration
@@ -38,8 +38,8 @@ In your Clerk Dashboard:
 In **Account Portal** → **Redirects** section, configure:
 
 **User redirects** (fallback URLs):
-- **After sign-up fallback**: `http://localhost:3000/`
-- **After sign-in fallback**: `http://localhost:3000/classroom`  
+- **After sign-up fallback**: `http://localhost:3000/profile`
+- **After sign-in fallback**: `http://localhost:3000/profile`  
 - **After logo click**: `http://localhost:3000`
 
 **Note**: Replace `http://localhost:3000` with your production domain when deploying.
