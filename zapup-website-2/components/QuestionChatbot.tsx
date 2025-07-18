@@ -328,8 +328,8 @@ I can help you with:
   }
 
   return (
-    <Card className={`fixed bottom-4 right-4 w-96 z-50 shadow-lg transition-all duration-300 bg-white ${
-      isOpen ? 'h-[600px]' : 'h-auto'
+    <Card className={`fixed bottom-4 right-2 md:right-4 w-80 md:w-96 z-50 shadow-lg transition-all duration-300 bg-white ${
+      isOpen ? 'h-[500px] md:h-[600px]' : 'h-auto'
     }`}>
       <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 rounded-t-lg">
         <div className="flex items-center justify-between">
@@ -355,7 +355,7 @@ I can help you with:
       </CardHeader>
 
       {isOpen && !isMinimized && (
-        <CardContent className="p-0 flex flex-col h-[calc(600px-80px)]">
+        <CardContent className="p-0 flex flex-col h-[calc(500px-80px)] md:h-[calc(600px-80px)]">
           {/* Usage Display for Explorer Plan */}
           <QuestionUsageDisplay 
             subjectId="mathematics" 

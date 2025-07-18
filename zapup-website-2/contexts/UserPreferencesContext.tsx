@@ -33,6 +33,7 @@ interface UserPreferencesContextType {
   isProfileComplete: () => boolean
   uploadProfilePicture: (file: File) => Promise<boolean>
   deleteProfilePicture: () => Promise<boolean>
+  refreshPreferences: () => void
 }
 
 const defaultPreferences: UserPreferences = {
@@ -58,12 +59,12 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
   const [isLoading, setIsLoading] = useState(true)
   const { user, isLoaded } = useUser()
 
-  const loadUserPreferences = useCallback(async () => {
+  const loadUserPreferences = useCallback(async (forceRefresh = false) => {
     if (!user) return
 
     try {
       setIsLoading(true)
-      console.log('Loading preferences for user:', user.id)
+      console.log('Loading preferences for user:', user.id, forceRefresh ? '(forced refresh)' : '')
       
       const dbPreferences = await userPreferencesService.getUserPreferences()
       console.log('Database preferences:', dbPreferences)
@@ -164,6 +165,12 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
 
       if (result) {
         setPreferences(updated)
+        
+        // Force refresh if subscription type changed
+        if (newPreferences.subscriptionType && newPreferences.subscriptionType !== preferences.subscriptionType) {
+          console.log('Subscription type changed, forcing refresh...')
+          setTimeout(() => loadUserPreferences(true), 1000)
+        }
       } else {
         throw new Error('Failed to update preferences in database')
       }
@@ -259,6 +266,10 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
     return false
   }
 
+  const refreshPreferences = useCallback(() => {
+    loadUserPreferences(true)
+  }, [loadUserPreferences])
+
   return (
     <UserPreferencesContext.Provider value={{
       preferences,
@@ -267,7 +278,8 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
       clearPreferences,
       isProfileComplete,
       uploadProfilePicture,
-      deleteProfilePicture
+      deleteProfilePicture,
+      refreshPreferences
     }}>
       {children}
     </UserPreferencesContext.Provider>

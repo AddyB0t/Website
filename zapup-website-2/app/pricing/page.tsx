@@ -33,7 +33,8 @@ import {
   Calculator,
   Globe,
   Clock,
-  Heart
+  Heart,
+  RefreshCw
 } from 'lucide-react'
 
 const pricingTiers = [
@@ -205,9 +206,10 @@ const subscriptionToPlanId = {
 export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly')
   const [selectedTier, setSelectedTier] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
   const { isSignedIn, isLoaded } = useAuth()
   const { initiatePayment, isLoading } = useRazorpay()
-  const { preferences } = useUserPreferences()
+  const { preferences, refreshPreferences } = useUserPreferences()
 
   // Helper function to check if a tier is the current plan
   const isCurrentPlan = (tierId: string) => {
@@ -252,6 +254,17 @@ export default function PricingPage() {
     })
   }
 
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try {
+      await refreshPreferences()
+    } catch (error) {
+      console.error('Error refreshing preferences:', error)
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
   // Show different experience based on authentication
   if (isSignedIn) {
     return (
@@ -276,7 +289,19 @@ export default function PricingPage() {
                   <p className="text-sm text-green-700">{getCurrentPlanInfo().description}</p>
                 </div>
               </div>
-              <Badge className="bg-green-100 text-green-800">Active</Badge>
+              <div className="flex items-center space-x-3">
+                <Button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  variant="outline"
+                  size="sm"
+                  className="text-green-700 border-green-300 hover:bg-green-50"
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                  {refreshing ? 'Refreshing...' : 'Refresh'}
+                </Button>
+                <Badge className="bg-green-100 text-green-800">Active</Badge>
+              </div>
             </div>
           </div>
           

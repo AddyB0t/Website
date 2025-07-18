@@ -1,18 +1,18 @@
 // zapup-website-2/app/questions/[classId]/[subjectId]/page.tsx
-// Subject-specific question page with left sidebar chapters/exercises and right side questions/answers
-// Loads real data from Supabase database using the correct API structure
+// Subject questions page with chapters, questions, and answers in responsive layout
+// Handles mobile and desktop views with proper navigation
 
 'use client'
 
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, ChevronDown, ChevronRight, Loader2, AlertCircle } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { AppLayout } from "@/components/AppLayout"
-import { getSubjectDisplayName } from '@/lib/subjects'
+import { useEffect, useState } from 'react'
+import { useRouter, useParams } from 'next/navigation'
+import { AppLayout } from '@/components/AppLayout'
+import { Button } from '@/components/ui/button'
+import { Loader2, ArrowLeft, ChevronRight, ChevronDown, Menu, X, AlertCircle } from 'lucide-react'
+import { QuestionUsageDisplay } from '@/components/QuestionUsageDisplay'
+import { QuestionChatbot } from '@/components/QuestionChatbot'
 import { useUserPreferences } from '@/contexts/UserPreferencesContext'
-import { QuestionChatbot } from "@/components/QuestionChatbot"
-import { QuestionUsageDisplay } from "@/components/QuestionUsageDisplay"
+import { getSubjectDisplayName } from '@/lib/subjects'
 import { SUBSCRIPTION_FEATURES } from '@/lib/subscriptions'
 
 // Answer Section Component
@@ -111,14 +111,14 @@ function AnswerSection({ question, subject, classId }: { question: Question | un
   if (!question) return null
 
   return (
-    <div className="py-4">
-      <div className="text-gray-700 mb-4">
+    <div className="py-4 px-2 md:px-0">
+      <div className="text-gray-700 mb-4 break-words">
         <span className="font-medium">Question {question.order_index}:</span> {question.text}
       </div>
-      <div className="text-center py-8">
+      <div className="text-center py-4 md:py-8">
         <Button 
           onClick={generateAnswer}
-          className="bg-blue-600 hover:bg-blue-700 text-white"
+          className="bg-blue-600 hover:bg-blue-700 text-white w-full md:w-auto"
           disabled={isGenerating || usageLimitReached}
         >
           {isGenerating ? 'Generating...' : 'Generate Answer'}
@@ -131,22 +131,22 @@ function AnswerSection({ question, subject, classId }: { question: Question | un
       </div>
 
       {isGenerating && (
-        <div className="flex items-center justify-center py-8">
+        <div className="flex items-center justify-center py-4 md:py-8">
           <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
           <span className="ml-3 text-gray-600">Generating answer...</span>
         </div>
       )}
 
       {error && (
-        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 md:p-4 mb-4">
           {error}
         </div>
       )}
 
       {answer && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 md:p-4 mb-16 md:mb-0">
           <div className="font-medium text-green-800 mb-2">Answer:</div>
-          <div className="text-gray-700 whitespace-pre-wrap">{answer}</div>
+          <div className="text-gray-700 whitespace-pre-wrap break-words text-sm md:text-base leading-relaxed">{answer}</div>
         </div>
       )}
     </div>
@@ -193,6 +193,7 @@ export default function SubjectQuestionsPage() {
   const [selectedSection, setSelectedSection] = useState<string | null>(null)
   const [selectedQuestion, setSelectedQuestion] = useState<number | null>(null)
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set())
+  const [mobileView, setMobileView] = useState<'chapters' | 'questions' | 'answers'>('chapters')
 
   // Loading states
   const [loadingSections, setLoadingSections] = useState(false)
@@ -325,25 +326,53 @@ export default function SubjectQuestionsPage() {
         {/* Header */}
         <div className="bg-white border-b border-gray-200 px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 md:space-x-4">
               <Button
                 variant="ghost"
                 size="sm"
-              onClick={() => router.back()} 
-                className="text-gray-600 hover:text-gray-900"
+                onClick={() => router.back()} 
+                className="text-gray-600 hover:text-gray-900 p-1 md:p-2"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
+                <ArrowLeft className="w-4 h-4 mr-1 md:mr-2" />
+                <span className="hidden sm:inline">Back</span>
               </Button>
-              <div className="text-sm text-gray-500">
+              <div className="text-xs md:text-sm text-gray-500 hidden sm:block">
                 Class {classId} →
               </div>
-              <h1 className="text-xl font-semibold text-gray-900">
+              <h1 className="text-lg md:text-xl font-semibold text-gray-900 truncate">
                 {getSubjectDisplayName(subjectId)} Questions
               </h1>
             </div>
             
-            {/* Usage Display for Explorer Plan */}
+            {/* Mobile Navigation */}
+            <div className="md:hidden flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMobileView('chapters')}
+                className={`p-2 ${mobileView === 'chapters' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'}`}
+              >
+                <Menu className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMobileView('questions')}
+                className={`p-2 ${mobileView === 'questions' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'}`}
+              >
+                Q
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMobileView('answers')}
+                className={`p-2 ${mobileView === 'answers' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'}`}
+              >
+                A
+              </Button>
+            </div>
+            
+            {/* Desktop Usage Display */}
             <div className="hidden md:block">
               <QuestionUsageDisplay 
                 subjectId={subjectId} 
@@ -354,21 +383,21 @@ export default function SubjectQuestionsPage() {
           </div>
         </div>
 
+        {/* Mobile Usage Display */}
+        <div className="md:hidden bg-white border-b border-gray-200 px-4 py-2">
+          <QuestionUsageDisplay 
+            subjectId={subjectId} 
+            classId={classId} 
+            showInChatbot={false} 
+          />
+        </div>
+
         {/* Main Content */}
-        <div className="flex h-[calc(100vh-73px)]">
-          {/* Left Sidebar - Chapters */}
-          <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+        <div className="flex h-[calc(100vh-140px)] md:h-[calc(100vh-73px)]">
+          {/* Left Sidebar - Chapters (Desktop) */}
+          <div className="hidden md:block w-80 bg-white border-r border-gray-200 overflow-y-auto">
             <div className="p-4 border-b border-gray-200 bg-gray-50">
               <h2 className="text-lg font-semibold text-gray-900">Chapters</h2>
-            </div>
-            
-            {/* Mobile Usage Display */}
-            <div className="md:hidden">
-              <QuestionUsageDisplay 
-                subjectId={subjectId} 
-                classId={classId} 
-                showInChatbot={false} 
-              />
             </div>
             
             <div className="p-4">
@@ -419,8 +448,67 @@ export default function SubjectQuestionsPage() {
             </div>
           </div>
 
-          {/* Center Section - Questions */}
-          <div className="flex-1 flex">
+          {/* Mobile Chapters View */}
+          {mobileView === 'chapters' && (
+            <div className="md:hidden w-full bg-white overflow-y-auto">
+              <div className="p-4 border-b border-gray-200 bg-gray-50">
+                <h2 className="text-lg font-semibold text-gray-900">Chapters</h2>
+              </div>
+              
+              <div className="p-4">
+                {chapters.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No chapters available</p>
+                  </div>
+                ) : (
+                  chapters.map((chapter) => (
+                    <div key={chapter.id} className="mb-2">
+                      <button
+                        onClick={() => toggleChapter(chapter.id)}
+                        className="w-full flex items-center justify-between p-3 text-left rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <span className="font-medium text-gray-900">
+                          {chapter.title}
+                        </span>
+                        {expandedChapters.has(chapter.id) ? 
+                          <ChevronDown className="w-4 h-4 text-gray-500" /> : 
+                          <ChevronRight className="w-4 h-4 text-gray-500" />
+                        }
+                      </button>
+                      
+                      {expandedChapters.has(chapter.id) && (
+                        <div className="ml-4 mt-2 space-y-1">
+                          {chapter.sections.length === 0 ? (
+                            <p className="text-gray-500 text-sm px-2 py-1">No sections available</p>
+                          ) : (
+                            chapter.sections.map((section) => (
+                              <button
+                                key={section.id}
+                                onClick={() => {
+                                  handleSectionSelect(chapter.id, section.id)
+                                  setMobileView('questions')
+                                }}
+                                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                                  selectedSection === section.id
+                                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                }`}
+                              >
+                                {section.title}
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Desktop Center Section - Questions */}
+          <div className="hidden md:flex flex-1">
             <div className="w-1/2 bg-white border-r border-gray-200 flex flex-col">
               <div className="p-4 border-b border-gray-200 bg-blue-50">
                 <h3 className="text-lg font-semibold text-gray-900">
@@ -457,7 +545,7 @@ export default function SubjectQuestionsPage() {
                       <div className="font-medium text-blue-600 mb-2">
                         Question {idx + 1}:
                       </div>
-                      <div className="text-gray-700 text-sm leading-relaxed">
+                      <div className="text-gray-700 text-sm leading-relaxed break-words">
                         {question.text}
                       </div>
                     </button>
@@ -466,13 +554,13 @@ export default function SubjectQuestionsPage() {
               </div>
             </div>
 
-            {/* Right Section - Answers */}
-            <div className="w-1/2 bg-white">
+            {/* Desktop Right Section - Answers */}
+            <div className="w-1/2 bg-white flex flex-col">
               <div className="p-4 border-b border-gray-200 bg-green-50">
                 <h3 className="text-lg font-semibold text-gray-900">Answer & Solution</h3>
               </div>
               
-              <div className="p-4">
+              <div className="p-4 flex-1 overflow-y-auto">
                 {selectedQuestion ? (
                   <AnswerSection 
                     question={questions.find(q => q.id === selectedQuestion)} 
@@ -491,7 +579,86 @@ export default function SubjectQuestionsPage() {
                 )}
               </div>
             </div>
-                </div>
+          </div>
+
+          {/* Mobile Questions View */}
+          {mobileView === 'questions' && (
+            <div className="md:hidden w-full bg-white flex flex-col">
+              <div className="p-4 border-b border-gray-200 bg-blue-50">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {selectedSection ? 
+                    currentChapter?.sections.find(s => s.id === selectedSection)?.title || 'Section Questions' :
+                    'Section Questions'
+                  }
+                </h3>
+              </div>
+              
+              <div className="p-4 flex-1 overflow-y-auto">
+                {loadingQuestions ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                    <span className="ml-2 text-gray-600">Loading questions...</span>
+                  </div>
+                ) : questions.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">
+                      {selectedSection ? 'No questions available for this section' : 'Select a section to view questions'}
+                    </p>
+                  </div>
+                ) : (
+                  questions.map((question, idx) => (
+                    <button
+                      key={question.id}
+                      onClick={() => {
+                        setSelectedQuestion(question.id)
+                        setMobileView('answers')
+                      }}
+                      className={`w-full text-left p-4 rounded-lg border-2 mb-3 transition-all ${
+                        selectedQuestion === question.id
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="font-medium text-blue-600 mb-2">
+                        Question {idx + 1}:
+                      </div>
+                      <div className="text-gray-700 text-sm leading-relaxed break-words">
+                        {question.text}
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Mobile Answers View */}
+          {mobileView === 'answers' && (
+            <div className="md:hidden w-full bg-white flex flex-col">
+              <div className="p-4 border-b border-gray-200 bg-green-50">
+                <h3 className="text-lg font-semibold text-gray-900">Answer & Solution</h3>
+              </div>
+              
+              <div className="p-2 md:p-4 flex-1 overflow-y-auto pb-20">
+                {selectedQuestion ? (
+                  <AnswerSection 
+                    question={questions.find(q => q.id === selectedQuestion)} 
+                    subject={subjectId}
+                    classId={classId}
+                  />
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-gray-500 mb-4">
+                      Select a question to view the answer
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      Choose any question from the questions panel to see its detailed solution
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Chatbot - only show if user has access */}

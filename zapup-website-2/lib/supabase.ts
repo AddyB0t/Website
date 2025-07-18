@@ -43,6 +43,8 @@ export type UserPreferences = {
   profile_picture_filename?: string;
   profile_picture_size?: number;
   profile_complete: boolean;
+  subscription_type?: 'explorer' | 'scholar' | 'achiever' | 'genius_plus';
+  subscription_end_date?: string;
   created_at: string;
   updated_at: string;
 };
