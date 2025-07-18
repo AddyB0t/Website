@@ -1,6 +1,18 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
+// Chapter mapping for Class 7 Mathematics - based on NCERT curriculum
+const chapterOrder: { [key: string]: number } = {
+  'Large Number Around Us': 1,
+  'Arithmetic Expressions': 2,
+  'A Peek Beyond The Point': 3,
+  'Expressions Using Letter-Numbers': 4,
+  'Parallel And Intersecting Lines': 5,
+  'Number Play': 6,
+  'A Tale Of Three Intersecting Lines': 7,
+  'Working With Fractions': 8
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -179,6 +191,21 @@ export async function GET(request: Request) {
         }
       })
       
+      // Sort sections by their numerical order (extract section numbers)
+      sections.sort((a, b) => {
+        const getSectionNumber = (title: string) => {
+          // Extract section number like "4.1", "1.2", etc.
+          const match = title.match(/(\d+)\.(\d+)/)
+          if (match) {
+            return parseFloat(match[0]) // Returns 4.1, 1.2, etc.
+          }
+          // If no section number found, put it at the end
+          return 999
+        }
+        
+        return getSectionNumber(a.title) - getSectionNumber(b.title)
+      })
+      
       const totalQuestions = Array.from(sectionMap.values()).reduce((sum, count) => (sum as number) + (count as number), 0)
       
       return {
@@ -187,6 +214,40 @@ export async function GET(request: Request) {
         sections,
         totalQuestions
       }
+    })
+
+    // Sort chapters by their numerical order using the chapter mapping
+    chapters.sort((a, b) => {
+      const getChapterNumber = (title: string) => {
+        // First try to find exact match in our chapter mapping
+        if (chapterOrder[title]) {
+          return chapterOrder[title]
+        }
+        
+        // Fallback: extract chapter number from titles like "Chapter 1:", "1.", etc.
+        const match = title.match(/(?:Chapter\s+)?(\d+)/)
+        if (match) {
+          return parseInt(match[1])
+        }
+        
+        // If no chapter number found, sort alphabetically at the end
+        return 999
+      }
+      
+      const aChapterNum = getChapterNumber(a.title)
+      const bChapterNum = getChapterNumber(b.title)
+      
+      // If both have chapter numbers, sort numerically
+      if (aChapterNum !== 999 && bChapterNum !== 999) {
+        return aChapterNum - bChapterNum
+      }
+      
+      // If only one has a chapter number, prioritize it
+      if (aChapterNum !== 999) return -1
+      if (bChapterNum !== 999) return 1
+      
+      // If neither has a chapter number, sort alphabetically
+      return a.title.localeCompare(b.title)
     })
 
     return NextResponse.json({ chapters })

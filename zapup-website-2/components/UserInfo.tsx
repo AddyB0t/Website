@@ -36,7 +36,7 @@ export function UserInfo() {
 
   return (
     <div className="flex items-center gap-4">
-      <div className="flex items-center gap-2">
+      <Link href="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
         {user?.imageUrl && (
           <img 
             src={user.imageUrl} 
@@ -44,10 +44,10 @@ export function UserInfo() {
             className="w-8 h-8 rounded-full"
           />
         )}
-        <span className="text-sm text-gray-700">
+        <span className="text-sm text-gray-700 hover:text-blue-600 transition-colors">
           {user?.firstName || user?.emailAddresses[0]?.emailAddress}
         </span>
-      </div>
+      </Link>
       <SignOutButton />
     </div>
   )

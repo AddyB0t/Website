@@ -111,8 +111,8 @@ function AnswerSection({ question, subject, classId }: { question: Question | un
   if (!question) return null
 
   return (
-    <div className="py-4 px-2 md:px-0">
-      <div className="text-gray-700 mb-4 break-words">
+    <div className="py-4 px-2 md:px-0 w-full max-w-full">
+      <div className="text-gray-700 mb-4 break-words overflow-hidden">
         <span className="font-medium">Question {question.order_index}:</span> {question.text}
       </div>
       <div className="text-center py-4 md:py-8">
@@ -144,9 +144,9 @@ function AnswerSection({ question, subject, classId }: { question: Question | un
       )}
 
       {answer && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3 md:p-4 mb-16 md:mb-0">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 md:p-4 mb-16 md:mb-0 w-full max-w-full">
           <div className="font-medium text-green-800 mb-2">Answer:</div>
-          <div className="text-gray-700 whitespace-pre-wrap break-words text-sm md:text-base leading-relaxed">{answer}</div>
+          <div className="text-gray-700 whitespace-pre-wrap break-words text-sm md:text-base leading-relaxed w-full max-w-full overflow-hidden overflow-wrap-anywhere">{answer}</div>
         </div>
       )}
     </div>
@@ -560,7 +560,7 @@ export default function SubjectQuestionsPage() {
                 <h3 className="text-lg font-semibold text-gray-900">Answer & Solution</h3>
               </div>
               
-              <div className="p-4 flex-1 overflow-y-auto">
+              <div className="p-4 flex-1 overflow-y-auto overflow-x-hidden">
                 {selectedQuestion ? (
                   <AnswerSection 
                     question={questions.find(q => q.id === selectedQuestion)} 

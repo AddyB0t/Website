@@ -260,12 +260,12 @@ I can help you with:
       
       return (
         <div className="p-4 space-y-4">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <button
               onClick={() => setSelectedCategory(null)}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors border border-gray-200 bg-white shadow-sm"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4 text-gray-700" />
             </button>
             <div>
               <h4 className="font-medium text-gray-900">{categoryInfo.label}</h4>
@@ -290,9 +290,17 @@ I can help you with:
 
     return (
       <div className="p-4 space-y-6">
-        <div className="text-center">
-          <h4 className="font-medium text-gray-900 mb-2">How can I help you?</h4>
-          <p className="text-sm text-gray-600">Choose a category to see common questions:</p>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setShowPromptSelection(false)}
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors border border-gray-200 bg-white shadow-sm"
+          >
+            <ArrowLeft className="h-4 w-4 text-gray-700" />
+          </button>
+          <div className="text-center flex-1">
+            <h4 className="font-medium text-gray-900 mb-2">How can I help you?</h4>
+            <p className="text-sm text-gray-600">Choose a category to see common questions:</p>
+          </div>
         </div>
         
         <div className="grid grid-cols-2 gap-3">
@@ -328,34 +336,49 @@ I can help you with:
   }
 
   return (
-    <Card className={`fixed bottom-4 right-2 md:right-4 w-80 md:w-96 z-50 shadow-lg transition-all duration-300 bg-white ${
-      isOpen ? 'h-[500px] md:h-[600px]' : 'h-auto'
+    <Card className={`fixed bottom-4 right-2 md:right-4 z-50 shadow-lg transition-all duration-300 bg-white ${
+      isOpen ? 'w-72 md:w-80 h-[400px] md:h-[480px]' : 'w-14 h-14 rounded-full'
     }`}>
-      <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 rounded-t-lg">
+      <CardHeader className={`bg-gradient-to-r from-green-600 to-emerald-600 text-white ${
+        isOpen ? 'p-3 rounded-t-lg' : 'p-0 rounded-full h-full flex items-center justify-center'
+      }`}>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center space-x-2">
-            <Bot className="h-5 w-5" />
-            <span className="text-lg font-semibold">Study Helper</span>
-          </CardTitle>
-          
-          <div className="flex items-center space-x-2">
-            <div className="bg-white/20 text-white px-2 py-1 rounded-lg text-xs font-medium">
-              Q{questionNumber}
-            </div>
+          {isOpen ? (
+            <>
+              <CardTitle className="flex items-center space-x-2">
+                <Bot className="h-4 w-4" />
+                <span className="text-base font-semibold">Study Helper</span>
+              </CardTitle>
+              
+              <div className="flex items-center space-x-1">
+                <div className="bg-white/20 text-white px-1.5 py-0.5 rounded text-xs font-medium">
+                  Q{questionNumber}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsOpen(!isOpen)}
+                  className="h-7 w-7 text-white hover:bg-green-500"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </>
+          ) : (
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsOpen(!isOpen)}
-              className="h-8 w-8 text-white hover:bg-green-500"
+              className="h-12 w-12 text-white hover:bg-green-500 rounded-full"
             >
-              {isOpen ? <X className="h-4 w-4" /> : <MessageCircle className="h-4 w-4" />}
+              <MessageCircle className="h-5 w-5" />
             </Button>
-          </div>
+          )}
         </div>
       </CardHeader>
 
       {isOpen && !isMinimized && (
-        <CardContent className="p-0 flex flex-col h-[calc(500px-80px)] md:h-[calc(600px-80px)]">
+        <CardContent className="p-0 flex flex-col h-[calc(400px-64px)] md:h-[calc(480px-64px)]">
           {/* Usage Display for Explorer Plan */}
           <QuestionUsageDisplay 
             subjectId="mathematics" 
@@ -386,14 +409,14 @@ I can help you with:
           ) : (
             <>
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-3 space-y-3">
                 {messages.map((message) => (
                   <div
                     key={message.id}
                     className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[80%] rounded-2xl p-3 ${
+                      className={`max-w-[85%] rounded-2xl p-2.5 ${
                         message.role === 'user'
                           ? 'bg-green-600 text-white'
                           : 'bg-gray-100 text-gray-900'
@@ -407,7 +430,7 @@ I can help you with:
                           <User className="h-4 w-4 mt-0.5 text-white" />
                         )}
                         <div className="flex-1">
-                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                          <p className="text-sm whitespace-pre-wrap break-words max-w-full overflow-hidden">{message.content}</p>
                           <p className={`text-xs mt-1 ${
                             message.role === 'user' ? 'text-green-100' : 'text-gray-500'
                           }`}>
@@ -438,25 +461,25 @@ I can help you with:
               {/* Action area for both limited and full chatbot */}
               <div className="border-t bg-gray-50">
                 {/* Action buttons */}
-                <div className="px-4 py-3 space-y-2">
+                <div className="px-3 py-2 space-y-2">
                   {/* Quick questions bubble */}
                   <div
                     onClick={() => setShowPromptSelection(true)}
-                    className="bg-green-50 hover:bg-green-100 border border-green-200 rounded-2xl p-3 cursor-pointer transition-all duration-200 text-center"
+                    className="bg-green-50 hover:bg-green-100 border border-green-200 rounded-2xl p-2 cursor-pointer transition-all duration-200 text-center"
                   >
-                    <span className="text-sm text-green-800">Ask another question</span>
+                    <span className="text-xs text-green-800">Ask another question</span>
                   </div>
 
                   {/* Photo upload bubble - only for Achiever/Genius+ */}
                   {canUploadImages && (
                     <div
                       onClick={() => setShowPhotoUpload(true)}
-                      className="bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-2xl p-3 cursor-pointer transition-all duration-200 text-center"
+                      className="bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-2xl p-2 cursor-pointer transition-all duration-200 text-center"
                     >
-                      <div className="flex items-center justify-center space-x-2">
-                        <Camera className="w-4 h-4 text-purple-700" />
-                        <span className="text-sm text-purple-800">Upload question image</span>
-                        <Crown className="w-4 h-4 text-purple-700" />
+                      <div className="flex items-center justify-center space-x-1">
+                        <Camera className="w-3 h-3 text-purple-700" />
+                        <span className="text-xs text-purple-800">Upload image</span>
+                        <Crown className="w-3 h-3 text-purple-700" />
                       </div>
                     </div>
                   )}
@@ -464,8 +487,8 @@ I can help you with:
 
                 {/* Input - only show for full chatbot mode */}
                 {hasFullChatbot && (
-                  <div className="px-4 pb-4">
-                    <div className="flex space-x-2">
+                  <div className="px-3 pb-3">
+                    <div className="flex space-x-1">
                       <Input
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}

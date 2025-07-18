@@ -227,7 +227,7 @@ export default function RSAggarwalMathematics() {
                       ) : (
                         <div className="prose max-w-none">
                           {answer ? (
-                            <div className="whitespace-pre-line">{answer}</div>
+                            <div className="whitespace-pre-line break-words max-w-full overflow-hidden">{answer}</div>
                           ) : (
                             <p className="text-gray-500 italic">Select a question to see its answer</p>
                           )}

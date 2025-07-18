@@ -24,6 +24,7 @@ interface ClassroomLayoutProps {
   subjects: Subject[]
   className?: string
   additionalSections?: React.ReactNode
+  classId?: string
 }
 
 export function ClassroomLayout({ 
@@ -31,7 +32,8 @@ export function ClassroomLayout({
   description, 
   subjects, 
   className = '',
-  additionalSections
+  additionalSections,
+  classId
 }: ClassroomLayoutProps) {
   return (
     <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${className}`}>
@@ -47,31 +49,29 @@ export function ClassroomLayout({
           <Card key={subject.id} className="group hover:shadow-xl transition-all duration-300 border border-gray-200 shadow-lg overflow-hidden bg-white">
             {/* Card Header */}
             <CardHeader className="bg-white border-b border-gray-100 p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-blue-50 rounded-xl shadow-sm border border-blue-100">
-                    <div className="text-blue-600">
-                      {subject.icon}
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-xl font-semibold text-gray-900 mb-2">
-                      {subject.name}
-                    </CardTitle>
-                    {subject.available !== undefined && (
-                      <Badge 
-                        variant={subject.available ? "default" : "secondary"}
-                        className={`
-                          ${subject.available 
-                            ? "bg-blue-600 hover:bg-blue-700 text-white border-0" 
-                            : "bg-gray-100 text-gray-600 border-0"
-                          }
-                        `}
-                      >
-                        {subject.available ? "Available" : "Coming Soon"}
-                      </Badge>
-                    )}
-                  </div>
+              <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 ${subject.bgColor || 'bg-blue-50'}`}>
+                <div className="text-blue-600">{subject.icon}</div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl font-bold text-gray-900 group-hover:text-gray-900">
+                    {subject.name}
+                  </CardTitle>
+                  {subject.available !== undefined && (
+                    <Badge 
+                      variant="secondary" 
+                      className={`
+                        text-xs font-medium px-3 py-1 rounded-full border
+                        ${subject.available 
+                          ? "bg-blue-600 hover:bg-blue-700 text-white border-0" 
+                          : "bg-gray-100 text-gray-600 border-0"
+                        }
+                      `}
+                    >
+                      {subject.available ? "Available" : "Coming Soon"}
+                    </Badge>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -112,7 +112,7 @@ export function ClassroomLayout({
                     asChild
                     className="bg-blue-600 hover:bg-blue-700 text-white border-0 shadow-md hover:shadow-lg group/btn transition-all duration-200"
                   >
-                    <Link href={`/classroom/${subject.id}`} className="flex items-center">
+                    <Link href={classId ? `/books/class-${classId}th/${subject.id}` : `/books/${subject.id}`} className="flex items-center">
                       <span>Explore</span>
                       <ChevronRight className="w-4 h-4 ml-1 group-hover/btn:translate-x-1 transition-transform" />
                     </Link>

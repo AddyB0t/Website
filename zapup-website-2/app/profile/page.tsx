@@ -489,6 +489,7 @@ export default function ProfilePage() {
               cardClass: s.available ? 'shadow-xl border-teal-100' : 'shadow-md border-gray-100',
             }))}
             additionalSections={additionalSections}
+            classId={preferences.currentClass}
           />
         </div>
       </div>

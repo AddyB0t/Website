@@ -106,6 +106,7 @@ export default function Class9QuestionsPage() {
         description="Explore your subjects below. Each card leads to lessons, practice exercises, and resources aligned with your Class 9 curriculum to help you prepare for board examinations."
         subjects={subjects}
         additionalSections={additionalSections}
+        classId="9"
       />
     </AppLayout>
   )

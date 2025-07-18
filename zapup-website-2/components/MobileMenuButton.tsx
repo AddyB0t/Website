@@ -1,11 +1,19 @@
+// zapup-website-2/components/MobileMenuButton.tsx
+// Mobile navigation menu component
+// Shows navigation links and handles user authentication state
+
 "use client"
 
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useState } from "react"
+import { useAuth, useUser } from '@clerk/nextjs'
+import { SignOutButton } from './SignOutButton'
 
 export function MobileMenuButton() {
   const [isOpen, setIsOpen] = useState(false)
+  const { isSignedIn, isLoaded } = useAuth()
+  const { user } = useUser()
   
   return (
     <div className="md:hidden">
@@ -49,12 +57,37 @@ export function MobileMenuButton() {
               Pricing
             </Link>
             <div className="flex flex-col space-y-2 mt-4 pt-4 border-t border-gray-100">
-              <Link href="/sign-in" className="py-2 text-blue-800 uppercase text-xs tracking-wider">
-                Sign In
-              </Link>
-              <Link href="/sign-up" className="py-2 text-blue-800 uppercase text-xs tracking-wider">
-                Sign Up
-              </Link>
+              {isLoaded && isSignedIn ? (
+                <>
+                  <div className="flex items-center space-x-2 py-2">
+                    {user?.imageUrl && (
+                      <img 
+                        src={user.imageUrl} 
+                        alt="Profile" 
+                        className="w-6 h-6 rounded-full"
+                      />
+                    )}
+                    <span className="text-sm text-gray-700">
+                      {user?.firstName || user?.emailAddresses[0]?.emailAddress}
+                    </span>
+                  </div>
+                  <Link href="/profile" className="py-2 text-blue-800 uppercase text-xs tracking-wider">
+                    Profile
+                  </Link>
+                  <div className="py-1">
+                    <SignOutButton variant="ghost" className="w-full justify-start p-0 h-auto py-2 text-blue-800 uppercase text-xs tracking-wider" showIcon={false} />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Link href="/sign-in" className="py-2 text-blue-800 uppercase text-xs tracking-wider">
+                    Sign In
+                  </Link>
+                  <Link href="/sign-up" className="py-2 text-blue-800 uppercase text-xs tracking-wider">
+                    Sign Up
+                  </Link>
+                </>
+              )}
             </div>
           </nav>
         </div>

@@ -306,7 +306,7 @@ export default function NCERTMathematics() {
                       ) : (
                         <div className="prose max-w-none">
                           {answer ? (
-                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-gray-800 whitespace-pre-line">
+                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-gray-800 whitespace-pre-line break-words max-w-full overflow-hidden">
                               {answer}
                             </div>
                           ) : (

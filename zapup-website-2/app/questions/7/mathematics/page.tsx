@@ -145,7 +145,7 @@ function AnswerSection({ question }: { question: Question | undefined }) {
       {answer && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <div className="font-medium text-green-800 mb-2">Answer:</div>
-          <div className="text-gray-700 whitespace-pre-wrap">{answer}</div>
+          <div className="text-gray-700 whitespace-pre-wrap break-words max-w-full overflow-hidden">{answer}</div>
         </div>
       )}
     </div>
@@ -462,12 +462,12 @@ export default function Class7MathematicsPage() {
             </div>
 
             {/* Right Section - Answers */}
-            <div className="w-1/2 bg-white">
+            <div className="w-1/2 bg-white flex flex-col">
               <div className="p-4 border-b border-gray-200 bg-green-50">
                 <h3 className="text-lg font-semibold text-gray-900">Answer & Solution</h3>
               </div>
               
-              <div className="p-4">
+              <div className="p-4 flex-1 overflow-y-auto overflow-x-hidden">
                 {selectedQuestion ? (
                   <AnswerSection 
                     question={questions.find(q => q.id === selectedQuestion)} 
