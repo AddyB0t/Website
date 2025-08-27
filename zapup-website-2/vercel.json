@@ -5,7 +5,7 @@
   "outputDirectory": ".next",
   "functions": {
     "app/api/admin/process-book/route.ts": {
-      "maxDuration": 2100
+      "maxDuration": 900
     }
   },
   "crons": [

@@ -135,9 +135,9 @@ export async function POST(request: NextRequest) {
     console.log('🚀 Making request to backend...');
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.log('⏰ Request timed out after 35 minutes');
+      console.log('⏰ Request timed out after 15 minutes');
       controller.abort();
-    }, 2100000); // 35 minute timeout (30min processing + 5min buffer)
+    }, 900000); // 15 minute timeout (Vercel maximum)
     
     // Build clean headers object without undefined values
     const headers: Record<string, string> = {};
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
         method: 'POST',
         body: backendFormData,
         headers: headers, // Clean headers without keep-alive conflicts
-        signal: controller.signal // AbortController handles 35-minute timeout
+        signal: controller.signal // AbortController handles 15-minute timeout
       });
       
       console.log(`📡 Backend responded with status: ${backendResponse.status}`);
@@ -218,7 +218,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: 'Processing timed out', 
-          details: 'The PDF processing took longer than expected (35 minutes). Please try again with a smaller file or contact support.'
+          details: 'The PDF processing took longer than expected (15 minutes). Please try again with a smaller file or contact support.'
         },
         { status: 408 }
       );
