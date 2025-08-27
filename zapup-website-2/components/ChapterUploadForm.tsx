@@ -82,10 +82,10 @@ export function ChapterUploadForm({ bookId, onUploadComplete, onClose }: Chapter
         return
       }
 
-      // Validate file size (25MB max for chapters)
-      const maxSize = 25 * 1024 * 1024
+      // Validate file size (100MB max for chapters)
+      const maxSize = 100 * 1024 * 1024
       if (file.size > maxSize) {
-        setUploadError('File size must be less than 25MB')
+        setUploadError('File size must be less than 100MB')
         return
       }
 
@@ -310,7 +310,7 @@ export function ChapterUploadForm({ bookId, onUploadComplete, onClose }: Chapter
               >
                 <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600 mb-2">Click to select a chapter file</p>
-                <p className="text-sm text-gray-500">PDF, EPUB, DOC, DOCX, PPT, PPTX, Images (Max 25MB)</p>
+                <p className="text-sm text-gray-500">PDF, EPUB, DOC, DOCX, PPT, PPTX, Images (Max 100MB)</p>
               </div>
             ) : (
               <div className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">

@@ -4,7 +4,7 @@
 
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import React, { createContext, useContext, useState, useEffect } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { userPreferencesService, UserPreferences as DBUserPreferences } from '@/lib/client-database'
 import { SubscriptionType } from "@/lib/subscriptions";
@@ -14,8 +14,6 @@ export interface UserPreferences {
   currentClass: string
   stream?: string
   state?: string
-  city?: string
-  boardType?: string
   school?: string
   firstName?: string
   lastName?: string
@@ -33,7 +31,6 @@ interface UserPreferencesContextType {
   isProfileComplete: () => boolean
   uploadProfilePicture: (file: File) => Promise<boolean>
   deleteProfilePicture: () => Promise<boolean>
-  refreshPreferences: () => void
 }
 
 const defaultPreferences: UserPreferences = {
@@ -41,8 +38,6 @@ const defaultPreferences: UserPreferences = {
   currentClass: '',
   stream: '',
   state: '',
-  city: '',
-  boardType: '',
   school: '',
   firstName: '',
   lastName: '',
@@ -59,12 +54,22 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
   const [isLoading, setIsLoading] = useState(true)
   const { user, isLoaded } = useUser()
 
-  const loadUserPreferences = useCallback(async (forceRefresh = false) => {
+  // Load preferences from database when user is loaded
+  useEffect(() => {
+    if (isLoaded && user) {
+      loadUserPreferences()
+    } else if (isLoaded && !user) {
+      setPreferences(defaultPreferences)
+      setIsLoading(false)
+    }
+  }, [isLoaded, user])
+
+  const loadUserPreferences = async () => {
     if (!user) return
 
     try {
       setIsLoading(true)
-      console.log('Loading preferences for user:', user.id, forceRefresh ? '(forced refresh)' : '')
+      console.log('Loading preferences for user:', user.id)
       
       const dbPreferences = await userPreferencesService.getUserPreferences()
       console.log('Database preferences:', dbPreferences)
@@ -100,17 +105,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
     } finally {
       setIsLoading(false)
     }
-  }, [user])
-
-  // Load preferences from database when user is loaded
-  useEffect(() => {
-    if (isLoaded && user) {
-      loadUserPreferences()
-    } else if (isLoaded && !user) {
-      setPreferences(defaultPreferences)
-      setIsLoading(false)
-    }
-  }, [isLoaded, user, loadUserPreferences])
+  }
 
   const updatePreferences = async (newPreferences: Partial<UserPreferences>) => {
     if (!user) return
@@ -120,27 +115,15 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
       
       const updated = { ...preferences, ...newPreferences }
       
-      // Check if profile is complete using same logic as isProfileComplete
+      // Check if profile is complete
       const isStreamRequired = updated.currentClass === '11' || updated.currentClass === '12'
-      
-      // New workflow complete check
-      const newWorkflowComplete = !!(
-        updated.state &&
-        updated.city &&
-        updated.boardType &&
-        updated.school && 
-        updated.currentClass && 
-        (!isStreamRequired || updated.stream)
-      )
-      
-      // Legacy workflow fallback
-      const legacyWorkflowComplete = !!(
+      const isComplete = !!(
         updated.schoolBoard && 
         updated.currentClass && 
+        updated.state &&
+        updated.school &&
         (!isStreamRequired || updated.stream)
       )
-      
-      const isComplete = newWorkflowComplete || legacyWorkflowComplete
       
       updated.isComplete = isComplete
 
@@ -165,12 +148,6 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
 
       if (result) {
         setPreferences(updated)
-        
-        // Force refresh if subscription type changed
-        if (newPreferences.subscriptionType && newPreferences.subscriptionType !== preferences.subscriptionType) {
-          console.log('Subscription type changed, forcing refresh...')
-          setTimeout(() => loadUserPreferences(true), 1000)
-        }
       } else {
         throw new Error('Failed to update preferences in database')
       }
@@ -204,25 +181,13 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
 
   const isProfileComplete = () => {
     const isStreamRequired = preferences.currentClass === '11' || preferences.currentClass === '12'
-    
-    // New workflow requires: state, city, boardType, school, currentClass (+ stream if 11/12)
-    const newWorkflowComplete = !!(
-      preferences.state &&
-      preferences.city &&
-      preferences.boardType &&
-      preferences.school && 
-      preferences.currentClass && 
-      (!isStreamRequired || preferences.stream)
-    )
-    
-    // Legacy workflow fallback: schoolBoard, currentClass (+ stream if 11/12)
-    const legacyWorkflowComplete = !!(
+    return !!(
       preferences.schoolBoard && 
       preferences.currentClass && 
+      preferences.state &&
+      preferences.school &&
       (!isStreamRequired || preferences.stream)
     )
-    
-    return newWorkflowComplete || legacyWorkflowComplete
   }
 
   const uploadProfilePicture = async (file: File): Promise<boolean> => {
@@ -266,10 +231,6 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
     return false
   }
 
-  const refreshPreferences = useCallback(() => {
-    loadUserPreferences(true)
-  }, [loadUserPreferences])
-
   return (
     <UserPreferencesContext.Provider value={{
       preferences,
@@ -278,8 +239,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
       clearPreferences,
       isProfileComplete,
       uploadProfilePicture,
-      deleteProfilePicture,
-      refreshPreferences
+      deleteProfilePicture
     }}>
       {children}
     </UserPreferencesContext.Provider>
@@ -294,14 +254,25 @@ export function useUserPreferences() {
   return context
 } 
 
+// School board mapping constants
+const SCHOOL_BOARD_MAPPING = {
+  // Display name -> Database name
+  'CBSE': 'CBSE (Central Board of Secondary Education)',
+  'ICSE': 'ICSE (Indian Certificate of Secondary Education)',
+} as const;
+
+const REVERSE_SCHOOL_BOARD_MAPPING = {
+  // Database name -> Display name
+  'CBSE (Central Board of Secondary Education)': 'CBSE',
+  'ICSE (Indian Certificate of Secondary Education)': 'ICSE',
+} as const;
+
 // When mapping from DB to context:
 const dbToContext = (dbPreferences: any): UserPreferences => ({
-  schoolBoard: dbPreferences.school_board || '',
+  schoolBoard: REVERSE_SCHOOL_BOARD_MAPPING[dbPreferences.school_type as keyof typeof REVERSE_SCHOOL_BOARD_MAPPING] || dbPreferences.school_type || '',
   currentClass: dbPreferences.class_level || '',
   stream: dbPreferences.stream || '',
   state: dbPreferences.state || '',
-  city: dbPreferences.city || '',
-  boardType: dbPreferences.board_type || '',
   school: dbPreferences.school || '',
   firstName: dbPreferences.first_name || '',
   lastName: dbPreferences.last_name || '',
@@ -312,30 +283,16 @@ const dbToContext = (dbPreferences: any): UserPreferences => ({
 });
 
 // When mapping from context to DB:
-const contextToDb = (prefs: UserPreferences) => {
-  const isStreamRequired = prefs.currentClass === '11' || prefs.currentClass === '12'
-  const profileComplete = !!(
-    prefs.state &&
-    prefs.city &&
-    prefs.boardType &&
-    prefs.school && 
-    prefs.currentClass && 
-    (!isStreamRequired || prefs.stream)
-  )
-  
-  return {
-    school_board: prefs.schoolBoard,
-    class_level: prefs.currentClass,
-    stream: prefs.stream,
-    state: prefs.state,
-    city: prefs.city,
-    board_type: prefs.boardType,
-    school: prefs.school,
-    first_name: prefs.firstName,
-    last_name: prefs.lastName,
-    email: prefs.email,
-    profile_picture_url: prefs.profilePictureUrl,
-    profile_complete: profileComplete,
-    subscription_type: prefs.subscriptionType,
-  }
-}; 
+const contextToDb = (prefs: UserPreferences) => ({
+  school_type: SCHOOL_BOARD_MAPPING[prefs.schoolBoard as keyof typeof SCHOOL_BOARD_MAPPING] || prefs.schoolBoard,
+  class_level: prefs.currentClass,
+  stream: prefs.stream,
+  state: prefs.state,
+  school: prefs.school,
+  first_name: prefs.firstName,
+  last_name: prefs.lastName,
+  email: prefs.email,
+  profile_picture_url: prefs.profilePictureUrl,
+  profile_complete: prefs.isComplete,
+  subscription_type: prefs.subscriptionType,
+}); 

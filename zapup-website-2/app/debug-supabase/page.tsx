@@ -57,7 +57,7 @@ export default function DebugSupabasePage() {
       user_id: testUserId,
       first_name: 'Test',
       last_name: 'User',
-      school_board: 'CBSE' as const,
+      school_board: 'CBSE (Central Board of Secondary Education)' as const,
       class_level: '10' as const,
       profile_complete: false
     };

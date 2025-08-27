@@ -11,6 +11,7 @@ import { ClassroomLayout, LearningResourcesSection } from '@/components/Classroo
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 import { 
   User, 
   Calculator, 
@@ -26,7 +27,7 @@ import {
   Settings
 } from 'lucide-react'
 import { useUserPreferences } from '@/contexts/UserPreferencesContext'
-import { getStateNames, getCitiesByState, getBoardsByStateAndCity, getSchoolsByStateAndCityAndBoard } from '@/lib/enhanced-states-schools-data'
+import { getStateNames, getSchoolsByState } from '@/lib/states-schools-data'
 import { getSubjectsByClass } from '@/lib/subjects'
 import { canAccessClass } from '@/lib/access-control'
 import Head from 'next/head'
@@ -34,18 +35,22 @@ import Link from 'next/link'
 
 export default function ProfilePage() {
   const { user, isLoaded } = useUser()
-  const { preferences, updatePreferences, isLoading, isProfileComplete } = useUserPreferences()
+  const { preferences, updatePreferences, isLoading } = useUserPreferences()
+  const [selectedBoard, setSelectedBoard] = useState('')
   const [selectedClass, setSelectedClass] = useState('')
   const [selectedStream, setSelectedStream] = useState('')
   const [selectedState, setSelectedState] = useState('')
-  const [selectedCity, setSelectedCity] = useState('')
-  const [selectedBoardType, setSelectedBoardType] = useState('')
   const [selectedSchool, setSelectedSchool] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
-  const preferencesLoadedRef = useRef(false)
+  const [schoolSearchQuery, setSchoolSearchQuery] = useState('')
+  const [showSchoolSuggestions, setShowSchoolSuggestions] = useState(false)
+  const [filteredSchools, setFilteredSchools] = useState<Array<{name: string, city: string, board: string}>>([])
 
-
+  const schoolBoards = [
+    { value: 'CBSE', label: 'CBSE (Central Board of Secondary Education)' },
+    { value: 'ICSE', label: 'ICSE (Indian Certificate of Secondary Education)' }
+  ]
 
   const classes = [
     { value: '6', label: 'Class 6' },
@@ -66,18 +71,19 @@ export default function ProfilePage() {
   // Check if stream selection is required (for classes 11 and 12)
   const isStreamRequired = selectedClass === '11' || selectedClass === '12'
 
-  // Load saved preferences on mount - prevent infinite loop with ref
+  // Load saved preferences on mount
   useEffect(() => {
-    if (!isLoading && !preferencesLoadedRef.current) {
+    if (!isLoading) {
       if (preferences.state) setSelectedState(preferences.state)
-      if (preferences.city) setSelectedCity(preferences.city)
-      if (preferences.boardType) setSelectedBoardType(preferences.boardType)
-      if (preferences.school) setSelectedSchool(preferences.school)
+      if (preferences.school) {
+        setSelectedSchool(preferences.school)
+        setSchoolSearchQuery(preferences.school)
+      }
+      if (preferences.schoolBoard) setSelectedBoard(preferences.schoolBoard)
       if (preferences.currentClass) setSelectedClass(preferences.currentClass)
       if (preferences.stream) setSelectedStream(preferences.stream)
-      preferencesLoadedRef.current = true
     }
-  }, [isLoading, preferences.state, preferences.city, preferences.boardType, preferences.school, preferences.currentClass, preferences.stream])
+  }, [preferences, isLoading])
 
   // Get subject icon
   const getSubjectIcon = (subjectId: string) => {
@@ -137,30 +143,45 @@ export default function ProfilePage() {
     }
   }
 
-  // Reset city, board type, and school when state changes
+  // Reset school when state changes
   const handleStateChange = (value: string) => {
     setSelectedState(value)
-    setSelectedCity('')
-    setSelectedBoardType('')
     setSelectedSchool('')
+    setSelectedBoard('')
+    setSchoolSearchQuery('')
+    setShowSchoolSuggestions(false)
   }
 
-  // Reset board type and school when city changes
-  const handleCityChange = (value: string) => {
-    setSelectedCity(value)
-    setSelectedBoardType('')
-    setSelectedSchool('')
+  // Handle school search input
+  const handleSchoolSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value
+    setSchoolSearchQuery(query)
+    
+    if (query.length > 0 && selectedState) {
+      const schools = getSchoolsByState(selectedState)
+      const filtered = schools.filter(school =>
+        school.name.toLowerCase().includes(query.toLowerCase()) ||
+        school.city.toLowerCase().includes(query.toLowerCase())
+      )
+      setFilteredSchools(filtered)
+      setShowSchoolSuggestions(true)
+    } else {
+      setFilteredSchools([])
+      setShowSchoolSuggestions(false)
+    }
   }
 
-  // Reset school when board type changes
-  const handleBoardTypeChange = (value: string) => {
-    setSelectedBoardType(value)
-    setSelectedSchool('')
+  // Handle school selection from suggestions
+  const handleSchoolSelect = (school: {name: string, city: string, board: string}) => {
+    setSelectedSchool(school.name)
+    setSchoolSearchQuery(school.name)
+    setShowSchoolSuggestions(false)
   }
 
-  // Handle school selection
-  const handleSchoolChange = (value: string) => {
-    setSelectedSchool(value)
+  // Handle click outside to close suggestions
+  const handleSchoolInputBlur = () => {
+    // Delay hiding suggestions to allow for clicks
+    setTimeout(() => setShowSchoolSuggestions(false), 200)
   }
 
   const handleSavePreferences = async () => {
@@ -168,9 +189,8 @@ export default function ProfilePage() {
     try {
       const newPreferences = {
         state: selectedState,
-        city: selectedCity,
-        boardType: selectedBoardType,
         school: selectedSchool,
+        schoolBoard: selectedBoard,
         currentClass: selectedClass,
         ...(isStreamRequired && { stream: selectedStream })
       }
@@ -198,11 +218,11 @@ export default function ProfilePage() {
     )
   }
 
-  // Check if profile is complete using the context method
-  const profileComplete = isProfileComplete()
+  // Check if profile is complete
+  const isProfileComplete = preferences.currentClass && preferences.schoolBoard
   
   // Get subjects for the user's class
-  const userSubjects = profileComplete ? getSubjectsByClass(preferences.currentClass, preferences.stream) : []
+  const userSubjects = isProfileComplete ? getSubjectsByClass(preferences.currentClass, preferences.stream) : []
   
   const subjects = userSubjects.map(subject => ({
     id: subject.id,
@@ -216,7 +236,7 @@ export default function ProfilePage() {
   }))
 
   const getWelcomeMessage = () => {
-    if (!profileComplete) {
+    if (!isProfileComplete) {
       return {
         title: "Welcome to ZapUp!",
         description: "Complete your profile to get personalized learning content and access to your classroom."
@@ -286,8 +306,8 @@ export default function ProfilePage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Step 1: State */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* State */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         <MapPin className="w-4 h-4 inline mr-1" />
@@ -307,21 +327,21 @@ export default function ProfilePage() {
                       </Select>
                     </div>
 
-                    {/* Step 2: City */}
+                    {/* School Board */}
                     {selectedState && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          <MapPin className="w-4 h-4 inline mr-1" />
-                          City
+                          <GraduationCap className="w-4 h-4 inline mr-1" />
+                          School Board
                         </label>
-                        <Select value={selectedCity} onValueChange={handleCityChange}>
+                        <Select value={selectedBoard} onValueChange={setSelectedBoard}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select your city" />
+                            <SelectValue placeholder="Select your school board" />
                           </SelectTrigger>
                           <SelectContent>
-                            {getCitiesByState(selectedState).map((city) => (
-                              <SelectItem key={city} value={city}>
-                                {city}
+                            {schoolBoards.map((board) => (
+                              <SelectItem key={board.value} value={board.value}>
+                                {board.label}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -329,108 +349,96 @@ export default function ProfilePage() {
                       </div>
                     )}
 
-                    {/* Step 3: Board Type */}
-                    {selectedState && selectedCity && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          <School className="w-4 h-4 inline mr-1" />
-                          Board Type
-                        </label>
-                        <Select value={selectedBoardType} onValueChange={handleBoardTypeChange}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select board type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {getBoardsByStateAndCity(selectedState, selectedCity).map((board) => (
-                              <SelectItem key={board} value={board}>
-                                {board}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-
-                    {/* Step 4: School */}
-                    {selectedState && selectedCity && selectedBoardType && (
-                      <div>
+                    {/* School */}
+                    {selectedState && selectedBoard && (
+                      <div className="relative">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           <School className="w-4 h-4 inline mr-1" />
                           School
                         </label>
-                        <Select value={selectedSchool} onValueChange={handleSchoolChange}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select your school" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {getSchoolsByStateAndCityAndBoard(selectedState, selectedCity, selectedBoardType).map((school) => (
-                              <SelectItem key={school.name} value={school.name}>
-                                {school.name}
-                              </SelectItem>
+                        <Input
+                          type="text"
+                          placeholder="Search for your school..."
+                          value={schoolSearchQuery}
+                          onChange={handleSchoolSearchChange}
+                          onBlur={handleSchoolInputBlur}
+                          onFocus={() => schoolSearchQuery.length > 0 && setShowSchoolSuggestions(true)}
+                          className="w-full"
+                        />
+                        {showSchoolSuggestions && filteredSchools.length > 0 && (
+                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            {filteredSchools.map((school) => (
+                              <div
+                                key={`${school.name}-${school.city}`}
+                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                onClick={() => handleSchoolSelect(school)}
+                              >
+                                <div className="font-medium text-gray-900">{school.name}</div>
+                                <div className="text-sm text-gray-600">{school.city} - {school.board}</div>
+                              </div>
                             ))}
-                          </SelectContent>
-                        </Select>
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
 
-                  {/* Additional Settings Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     {/* Class */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        <GraduationCap className="w-4 h-4 inline mr-1" />
-                        Class
-                      </label>
-                      <Select value={selectedClass} onValueChange={handleClassChange}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select your class" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {classes.map((classItem) => {
-                            const canAccess = canAccessClass(classItem.value, {
-                              currentClass: preferences.currentClass,
-                              subscriptionType: preferences.subscriptionType
-                            })
-                            const isCurrentClass = classItem.value === preferences.currentClass
-                            
-                            return (
-                              <SelectItem 
-                                key={classItem.value} 
-                                value={classItem.value}
-                                disabled={!canAccess && !isCurrentClass}
-                              >
-                                {classItem.label}
-                                {!canAccess && !isCurrentClass && (
-                                  <span className="text-orange-600 text-xs ml-2">
-                                    (Upgrade to unlock)
-                                  </span>
-                                )}
-                                {preferences.subscriptionType === 'scholar' && !isCurrentClass && canAccess && (
-                                  <span className="text-blue-600 text-xs ml-2">
-                                    (Switch class)
-                                  </span>
-                                )}
-                              </SelectItem>
-                            )
-                          })}
-                        </SelectContent>
-                      </Select>
-                      {preferences.subscriptionType === 'explorer' && selectedClass && !canAccessClass(selectedClass, {
-                        currentClass: preferences.currentClass,
-                        subscriptionType: preferences.subscriptionType
-                      }) && (
-                        <p className="text-xs text-orange-600 mt-1">
-                          Classes 9-12 require a Scholar plan or higher. 
-                          <Link href="/pricing" className="underline ml-1">Upgrade now</Link>
-                        </p>
-                      )}
-                      {preferences.subscriptionType === 'scholar' && selectedClass && selectedClass !== preferences.currentClass && (
-                        <p className="text-xs text-blue-600 mt-1">
-                          Scholar plan allows access to one class at a time. Changing will update your accessible content.
-                        </p>
-                      )}
-                    </div>
+                    {selectedBoard && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <GraduationCap className="w-4 h-4 inline mr-1" />
+                          Class
+                        </label>
+                        <Select value={selectedClass} onValueChange={handleClassChange}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your class" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {classes.map((classItem) => {
+                              const canAccess = canAccessClass(classItem.value, {
+                                currentClass: preferences.currentClass,
+                                subscriptionType: preferences.subscriptionType
+                              })
+                              const isCurrentClass = classItem.value === preferences.currentClass
+                              
+                              return (
+                                <SelectItem 
+                                  key={classItem.value} 
+                                  value={classItem.value}
+                                  disabled={!canAccess && !isCurrentClass}
+                                >
+                                  {classItem.label}
+                                  {!canAccess && !isCurrentClass && (
+                                    <span className="text-orange-600 text-xs ml-2">
+                                      (Upgrade to unlock)
+                                    </span>
+                                  )}
+                                  {preferences.subscriptionType === 'scholar' && !isCurrentClass && canAccess && (
+                                    <span className="text-blue-600 text-xs ml-2">
+                                      (Switch class)
+                                    </span>
+                                  )}
+                                </SelectItem>
+                              )
+                            })}
+                          </SelectContent>
+                        </Select>
+                        {preferences.subscriptionType === 'explorer' && selectedClass && !canAccessClass(selectedClass, {
+                          currentClass: preferences.currentClass,
+                          subscriptionType: preferences.subscriptionType
+                        }) && (
+                          <p className="text-xs text-orange-600 mt-1">
+                            Classes 9-12 require a Scholar plan or higher. 
+                            <Link href="/pricing" className="underline ml-1">Upgrade now</Link>
+                          </p>
+                        )}
+                        {preferences.subscriptionType === 'scholar' && selectedClass && selectedClass !== preferences.currentClass && (
+                          <p className="text-xs text-blue-600 mt-1">
+                            Scholar plan allows access to one class at a time. Changing will update your accessible content.
+                          </p>
+                        )}
+                      </div>
+                    )}
 
                     {/* Stream */}
                     {isStreamRequired && (
@@ -461,7 +469,7 @@ export default function ProfilePage() {
                     <Button
                       className="bg-blue-600 hover:bg-teal-500 text-white rounded-full shadow-md"
                       onClick={handleSavePreferences}
-                      disabled={isSaving || !selectedClass || !selectedState || !selectedCity || !selectedBoardType || !selectedSchool}
+                      disabled={isSaving || !selectedClass || !selectedBoard}
                     >
                       {isSaving ? 'Saving...' : 'Save Changes'}
                     </Button>

@@ -73,7 +73,7 @@ export async function DELETE(request: NextRequest) {
 
     const result = await userPreferencesService.upsertUserPreferences({
       user_id: userId,
-      school_board: undefined,
+      school_type: undefined,
       class_level: undefined,
       stream: undefined,
       state: undefined,

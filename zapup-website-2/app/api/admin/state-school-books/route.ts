@@ -91,23 +91,27 @@ export async function POST(request: NextRequest) {
     const timestamp = Date.now()
     const bookId = `${state.toLowerCase().replace(/\s+/g, '-')}-${school.toLowerCase().replace(/\s+/g, '-')}-${classLevel}-${subjectId}-${timestamp}`
 
-    // Insert book record into state_school_books table
+    // Insert book record into books table
     const { data: book, error: bookError } = await supabase
-      .from('state_school_books')
+      .from('books')
       .insert({
         id: bookId,
         title,
-        subject_id: subjectId,
-        state,
-        school,
+        subject_id: parseInt(subjectId),
+        school_id: null,
+        stream_id: null,
         class_level: classLevel,
+        school_type: 'CBSE (Central Board of Secondary Education)',
+        author: null,
         publisher: publisher || null,
-        year: year ? parseInt(year) : null,
+        edition: null,
+        publication_year: year ? parseInt(year) : null,
+        language: 'English',
+        description: description || null,
         file_url: null,
         file_name: null,
         file_size: null,
         uploaded_by: userId,
-        description: description || null,
         is_active: true
       })
       .select()
@@ -148,8 +152,8 @@ export async function POST(request: NextRequest) {
           console.error(`Invalid file type for chapter ${chapter.chapterNumber}:`, chapter.file.type)
           // Continue without file upload for this chapter
         } else {
-          // Validate file size (25MB max for chapters)
-          const maxSize = 25 * 1024 * 1024
+          // Validate file size (100MB max for chapters)
+          const maxSize = 100 * 1024 * 1024
           if (chapter.file.size > maxSize) {
             console.error(`File too large for chapter ${chapter.chapterNumber}:`, chapter.file.size)
             // Continue without file upload for this chapter
@@ -189,7 +193,7 @@ export async function POST(request: NextRequest) {
 
       // Insert chapter record
       const { data: chapterData, error: chapterError } = await supabase
-        .from('state_school_chapters')
+        .from('chapters')
         .insert({
           id: chapterId,
           book_id: bookId,
@@ -246,7 +250,7 @@ export async function GET(request: NextRequest) {
     const isActive = searchParams.get('isActive')
 
     let query = supabase
-      .from('state_school_books')
+      .from('books')
       .select('*')
       .order('created_at', { ascending: false })
 
@@ -300,7 +304,7 @@ export async function DELETE(request: NextRequest) {
 
     // Soft delete - mark as inactive
     const { data: book, error } = await supabase
-      .from('state_school_books')
+      .from('books')
       .update({ is_active: false })
       .eq('id', bookId)
       .select()

@@ -32,19 +32,16 @@ export type UserPreferences = {
   email?: string;
   first_name?: string;
   last_name?: string;
-  school_board?: 'CBSE' | 'ICSE' | 'State Board' | 'IB' | 'Cambridge' | 'Other';
+  school_type?: string; // Fixed: Changed from school_board to school_type to match database schema
   class_level?: '6' | '7' | '8' | '9' | '10' | '11' | '12';
-  stream?: 'Science' | 'Commerce' | 'Arts';
+  stream?: string; // Fixed: Changed from union type to string to match database schema
   state?: string;
-  city?: string;
-  board_type?: 'CBSE' | 'ICSE' | 'State Board' | 'IB' | 'Cambridge' | 'Other';
   school?: string;
   profile_picture_url?: string;
   profile_picture_filename?: string;
   profile_picture_size?: number;
   profile_complete: boolean;
-  subscription_type?: 'explorer' | 'scholar' | 'achiever' | 'genius_plus';
-  subscription_end_date?: string;
+  subscription_type?: string; // Added: Missing field from database schema
   created_at: string;
   updated_at: string;
 };
@@ -120,8 +117,10 @@ export const userPreferencesService = {
 
   // Create or update user preferences
   async upsertUserPreferences(preferences: Partial<UserPreferences> & { user_id: string }): Promise<UserPreferences | null> {
+    console.log('🔍 upsertUserPreferences called with:', preferences);
+    
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.log('Supabase not configured. Using localStorage fallback.');
+      console.log('❌ Supabase not configured. Using localStorage fallback.');
       const existing = fallbackStorage.get(`user_preferences_${preferences.user_id}`);
       const updated = {
         id: existing?.id || Date.now(),
@@ -131,9 +130,11 @@ export const userPreferencesService = {
         created_at: existing?.created_at || new Date().toISOString()
       };
       fallbackStorage.set(`user_preferences_${preferences.user_id}`, updated);
+      console.log('📦 Saved to localStorage:', updated);
       return updated;
     }
 
+    console.log('✅ Supabase configured. Attempting database upsert...');
     try {
     const { data, error } = await supabase
       .from('user_preferences')
@@ -142,8 +143,14 @@ export const userPreferencesService = {
       .single();
 
     if (error) {
-        console.error('Error upserting user preferences to Supabase:', error);
-        console.log('Falling back to localStorage...');
+        console.error('❌ Supabase upsert error:', error);
+        console.error('❌ Error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
+        console.log('📦 Falling back to localStorage...');
         const existing = fallbackStorage.get(`user_preferences_${preferences.user_id}`);
         const updated = {
           id: existing?.id || Date.now(),
@@ -153,9 +160,11 @@ export const userPreferencesService = {
           created_at: existing?.created_at || new Date().toISOString()
         };
         fallbackStorage.set(`user_preferences_${preferences.user_id}`, updated);
+        console.log('📦 Fallback saved to localStorage:', updated);
         return updated;
     }
 
+    console.log('✅ Database upsert successful!', data);
     return data;
     } catch (networkError) {
       console.error('Network error connecting to Supabase:', networkError);

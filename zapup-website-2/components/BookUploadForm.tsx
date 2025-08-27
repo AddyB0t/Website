@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Upload, X, Loader2, FileText, CheckCircle, Plus, Trash2, BookOpen } from 'lucide-react'
+import { getStateNames, getSchoolsByStateAndBoard } from '@/lib/states-schools-data'
 
 interface Chapter {
   id: string
@@ -31,13 +32,12 @@ interface BookUploadFormProps {
 export function BookUploadForm({ onUploadComplete, onClose }: BookUploadFormProps) {
   const [formData, setFormData] = useState({
     title: '',
-    subjectId: '',
-    state: '',
-    school: '',
+    subject: '',
     classLevel: '',
-    publisher: '',
-    year: '',
-    description: ''
+    schoolType: '',
+    stream: '',
+    state: '',
+    schoolName: ''
   })
   const [chapters, setChapters] = useState<Chapter[]>([
     {
@@ -53,23 +53,113 @@ export function BookUploadForm({ onUploadComplete, onClose }: BookUploadFormProp
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [uploadSuccess, setUploadSuccess] = useState(false)
+  const [availableSubjects, setAvailableSubjects] = useState<Array<{ id: string; name: string }>>([])
 
-  const subjects = [
-    { id: 'mathematics', name: 'Mathematics' },
-    { id: 'science', name: 'Science' },
-    { id: 'english', name: 'English' },
-    { id: 'social-studies', name: 'Social Studies' },
-    { id: 'hindi', name: 'Hindi' },
-    { id: 'computer-science', name: 'Computer Science' }
-  ]
+  // Function to get subjects based on class level
+  const getSubjectsForClass = (classLevel: string): Array<{ id: string; name: string }> => {
+    // Classes 6-10: Basic subjects with combined Science & Social Science
+    if (['6', '7', '8', '9', '10'].includes(classLevel)) {
+      return [
+        { id: 'Mathematics', name: 'Mathematics' },
+        { id: 'Science', name: 'Science' },
+        { id: 'English', name: 'English' },
+        { id: 'Hindi', name: 'Hindi' },
+        { id: 'Social Science', name: 'Social Science' },
+        { id: 'Sanskrit', name: 'Sanskrit' },
+        { id: 'French', name: 'French' },
+        { id: 'German', name: 'German' },
+        { id: 'Computer Science', name: 'Computer Science' },
+        { id: 'Physical Education', name: 'Physical Education' },
+        { id: 'Home Science', name: 'Home Science' },
+        { id: 'Fine Arts', name: 'Fine Arts' },
+        { id: 'Music', name: 'Music' }
+      ]
+    }
+    
+    // Classes 11-12: Advanced subjects with separate sciences & commerce
+    if (['11', '12'].includes(classLevel)) {
+      return [
+        { id: 'Mathematics', name: 'Mathematics' },
+        { id: 'English', name: 'English' },
+        { id: 'Hindi', name: 'Hindi' },
+        // Separate Sciences
+        { id: 'Physics', name: 'Physics' },
+        { id: 'Chemistry', name: 'Chemistry' },
+        { id: 'Biology', name: 'Biology' },
+        // Separate Social Studies
+        { id: 'History', name: 'History' },
+        { id: 'Geography', name: 'Geography' },
+        { id: 'Political Science', name: 'Political Science' },
+        { id: 'Psychology', name: 'Psychology' },
+        { id: 'Sociology', name: 'Sociology' },
+        // Commerce Subjects
+        { id: 'Accountancy', name: 'Accountancy' },
+        { id: 'Business Studies', name: 'Business Studies' },
+        { id: 'Economics', name: 'Economics' },
+        // Languages & Others
+        { id: 'Sanskrit', name: 'Sanskrit' },
+        { id: 'French', name: 'French' },
+        { id: 'German', name: 'German' },
+        { id: 'Computer Science', name: 'Computer Science' },
+        { id: 'Physical Education', name: 'Physical Education' },
+        { id: 'Home Science', name: 'Home Science' },
+        { id: 'Fine Arts', name: 'Fine Arts' },
+        { id: 'Music', name: 'Music' }
+      ]
+    }
+    
+    return [] // No class selected
+  }
 
   const classLevels = ['6', '7', '8', '9', '10', '11', '12']
+  
+  const schoolTypes = [
+    { id: 'CBSE (Central Board of Secondary Education)', name: 'CBSE (Central Board of Secondary Education)' },
+    { id: 'ICSE (Indian Certificate of Secondary Education)', name: 'ICSE (Indian Certificate of Secondary Education)' }
+  ]
+  
+  const streams = [
+    { id: 'Science Medical', name: 'Science Medical' },
+    { id: 'Science Non-Medical', name: 'Science Non-Medical' },
+    { id: 'Commerce', name: 'Commerce' },
+    { id: 'Humanities', name: 'Humanities' }
+  ]
 
+  const isStreamRequired = (classLevel: string) => {
+    return classLevel === '11' || classLevel === '12';
+  }
+
+  // Get filtered schools based on current state and school type
+  const filteredSchools = getSchoolsByStateAndBoard(formData.state, formData.schoolType);
+  
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }))
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+      
+      // Handle class level changes
+      if (field === 'classLevel') {
+        // Update available subjects based on new class level
+        const newAvailableSubjects = getSubjectsForClass(value);
+        setAvailableSubjects(newAvailableSubjects);
+        
+        // Clear subject if it's not available for the new class
+        if (prev.subject && !newAvailableSubjects.find(s => s.id === prev.subject)) {
+          newData.subject = '';
+        }
+        
+        // Clear stream when class level changes to 6-10
+        if (!isStreamRequired(value)) {
+          newData.stream = '';
+        }
+      }
+      
+      // Clear school name when state or school type changes
+      if (field === 'state' || field === 'schoolType') {
+        newData.schoolName = '';
+      }
+      
+      return newData;
+    })
     setUploadError(null)
   }
 
@@ -99,9 +189,9 @@ export function BookUploadForm({ onUploadComplete, onClose }: BookUploadFormProp
         return
       }
 
-      const maxSize = 25 * 1024 * 1024
+      const maxSize = 100 * 1024 * 1024
       if (file.size > maxSize) {
-        setUploadError('File size must be less than 25MB')
+        setUploadError('File size must be less than 100MB')
         return
       }
     }
@@ -133,9 +223,28 @@ export function BookUploadForm({ onUploadComplete, onClose }: BookUploadFormProp
   }
 
   const validateForm = () => {
-    if (!formData.title || !formData.subjectId || !formData.state || !formData.school || !formData.classLevel) {
-      setUploadError('Please fill in all required book fields')
+    // Check required fields with conditional stream validation
+    const requiredFields = ['title', 'subject', 'classLevel', 'schoolType', 'state', 'schoolName'];
+    const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
+
+    // Add stream validation only for classes 11 and 12
+    if (isStreamRequired(formData.classLevel) && !formData.stream) {
+      missingFields.push('stream');
+    }
+
+    if (missingFields.length > 0) {
+      const streamMsg = isStreamRequired(formData.classLevel) ? ', and stream' : '';
+      setUploadError(`Please fill in all required book fields: title, subject, class level, school type, state, school name${streamMsg}`)
       return false
+    }
+
+    // Validate that the selected subject is available for the selected class
+    if (formData.classLevel && formData.subject) {
+      const classSubjects = getSubjectsForClass(formData.classLevel);
+      if (!classSubjects.find(s => s.id === formData.subject)) {
+        setUploadError(`The selected subject "${formData.subject}" is not available for class ${formData.classLevel}. Please select a different subject.`)
+        return false
+      }
     }
 
     for (const chapter of chapters) {
@@ -181,51 +290,58 @@ export function BookUploadForm({ onUploadComplete, onClose }: BookUploadFormProp
     setUploadError(null)
 
     try {
-      const submitData = new FormData()
-      submitData.append('title', formData.title)
-      submitData.append('subjectId', formData.subjectId)
-      submitData.append('state', formData.state)
-      submitData.append('school', formData.school)
-      submitData.append('classLevel', formData.classLevel)
-      submitData.append('publisher', formData.publisher)
-      submitData.append('year', formData.year)
-      submitData.append('description', formData.description)
+      const results = []
       
-      chapters.forEach((chapter, index) => {
-        submitData.append(`chapters[${index}][chapterNumber]`, chapter.chapterNumber)
-        submitData.append(`chapters[${index}][title]`, chapter.title)
-        submitData.append(`chapters[${index}][description]`, chapter.description)
-        submitData.append(`chapters[${index}][pageStart]`, chapter.pageStart)
-        submitData.append(`chapters[${index}][pageEnd]`, chapter.pageEnd)
+      // Process each chapter individually as separate API calls
+      for (let index = 0; index < chapters.length; index++) {
+        const chapter = chapters[index]
+        
+        const chapterFormData = new FormData()
+        
+        // Add book metadata for each chapter - using backend expected field names
+        chapterFormData.append('book_title', formData.title)
+        chapterFormData.append('class_level', formData.classLevel)
+        chapterFormData.append('school_type', formData.schoolType)
+        chapterFormData.append('subject', formData.subject)
+        chapterFormData.append('stream', isStreamRequired(formData.classLevel) ? formData.stream : '')
+        chapterFormData.append('state', formData.state)
+        chapterFormData.append('school_name', formData.schoolName)
+        
+        // Add chapter-specific data - using backend expected field names
+        chapterFormData.append('chapter_number', chapter.chapterNumber)
+        chapterFormData.append('chapter_name', chapter.title)
+        
         if (chapter.file) {
-          submitData.append(`chapters[${index}][file]`, chapter.file)
+          chapterFormData.append('pdf_file', chapter.file)
         }
-      })
 
-      const response = await fetch('/api/admin/state-school-books', {
-        method: 'POST',
-        body: submitData
-      })
+        // Call backend for each chapter individually
+        const response = await fetch('/api/admin/process-book', {
+          method: 'POST',
+          body: chapterFormData
+        })
 
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Upload failed')
+        const result = await response.json()
+        
+        if (!response.ok) {
+          throw new Error(`Chapter ${chapter.chapterNumber} failed: ${result.error || 'Upload failed'}`)
+        }
+        
+        results.push(result)
       }
 
       setUploadSuccess(true)
-      onUploadComplete?.(result.book)
+      onUploadComplete?.(results)
       
       setTimeout(() => {
         setFormData({
           title: '',
-          subjectId: '',
-          state: '',
-          school: '',
+          subject: '',
           classLevel: '',
-          publisher: '',
-          year: '',
-          description: ''
+          schoolType: '',
+          stream: '',
+          state: '',
+          schoolName: ''
         })
         setChapters([{
           id: '1',
@@ -290,40 +406,33 @@ export function BookUploadForm({ onUploadComplete, onClose }: BookUploadFormProp
 
               <div className="space-y-2">
                 <Label htmlFor="subject">Subject *</Label>
-                <Select value={formData.subjectId} onValueChange={(value) => handleInputChange('subjectId', value)}>
+                <Select 
+                  value={formData.subject} 
+                  onValueChange={(value) => handleInputChange('subject', value)}
+                  disabled={!formData.classLevel}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select subject" />
+                    <SelectValue 
+                      placeholder={
+                        !formData.classLevel 
+                          ? "Select class level first" 
+                          : availableSubjects.length === 0 
+                            ? "No subjects available" 
+                            : "Select subject"
+                      } 
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {subjects.map((subject) => (
+                    {availableSubjects.map((subject) => (
                       <SelectItem key={subject.id} value={subject.id}>
                         {subject.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="state">State *</Label>
-                <Input
-                  id="state"
-                  value={formData.state}
-                  onChange={(e) => handleInputChange('state', e.target.value)}
-                  placeholder="Enter state name"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="school">School *</Label>
-                <Input
-                  id="school"
-                  value={formData.school}
-                  onChange={(e) => handleInputChange('school', e.target.value)}
-                  placeholder="Enter school name"
-                  required
-                />
+                {!formData.classLevel && (
+                  <p className="text-xs text-gray-500">Please select a class level to see available subjects</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -343,39 +452,83 @@ export function BookUploadForm({ onUploadComplete, onClose }: BookUploadFormProp
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="publisher">Publisher</Label>
-                <Input
-                  id="publisher"
-                  value={formData.publisher}
-                  onChange={(e) => handleInputChange('publisher', e.target.value)}
-                  placeholder="Enter publisher name (optional)"
-                />
+                <Label htmlFor="schoolType">School Type *</Label>
+                <Select value={formData.schoolType} onValueChange={(value) => handleInputChange('schoolType', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select school type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {schoolTypes.map((school) => (
+                      <SelectItem key={school.id} value={school.id}>
+                        {school.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="year">Publication Year</Label>
-                <Input
-                  id="year"
-                  type="number"
-                  value={formData.year}
-                  onChange={(e) => handleInputChange('year', e.target.value)}
-                  placeholder="Enter year (optional)"
-                  min="1900"
-                  max="2030"
-                />
+                <Label htmlFor="state">State *</Label>
+                <Select value={formData.state} onValueChange={(value) => handleInputChange('state', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getStateNames().map((state) => (
+                      <SelectItem key={state} value={state}>
+                        {state}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="schoolName">School Name *</Label>
+                <Select 
+                  value={formData.schoolName} 
+                  onValueChange={(value) => handleInputChange('schoolName', value)}
+                  disabled={!formData.state || !formData.schoolType}
+                >
+                  <SelectTrigger>
+                    <SelectValue 
+                      placeholder={
+                        !formData.state ? "Select state first" :
+                        !formData.schoolType ? "Select school type first" :
+                        filteredSchools.length === 0 ? "No schools available" :
+                        "Select school"
+                      } 
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredSchools.map((school) => (
+                      <SelectItem key={`${school.name}-${school.city}`} value={school.name}>
+                        {school.name} ({school.city})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {isStreamRequired(formData.classLevel) && (
+                <div className="space-y-2">
+                  <Label htmlFor="stream">Stream *</Label>
+                  <Select value={formData.stream} onValueChange={(value) => handleInputChange('stream', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select stream" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {streams.map((stream) => (
+                        <SelectItem key={stream.id} value={stream.id}>
+                          {stream.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Book Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                placeholder="Enter book description (optional)"
-                rows={3}
-              />
-            </div>
           </div>
 
           {/* Chapters Section */}
@@ -561,7 +714,7 @@ function ChapterUploadCard({
             >
               <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
               <p className="text-sm text-gray-600 mb-1">Click to select chapter file</p>
-              <p className="text-xs text-gray-500">PDF, EPUB, DOC, DOCX, PPT, PPTX, Images (Max 25MB)</p>
+              <p className="text-xs text-gray-500">PDF, EPUB, DOC, DOCX, PPT, PPTX, Images (Max 100MB)</p>
             </div>
           ) : (
             <div className="flex items-center justify-between p-3 border rounded-lg bg-gray-50">

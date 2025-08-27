@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge"
 import { CopyrightYear } from "../components/CopyrightYear"
 import { MobileMenuButton } from "../components/MobileMenuButton"
 import { ClassSelectionModal } from "../components/ClassSelectionModal"
-import { UserInfo } from "../components/UserInfo"
 import { 
   BookOpen, 
   Users, 
@@ -45,8 +44,9 @@ export default function Home() {
   }
 
   const handleSubjectClick = (subjectName: string) => {
-    // Redirect to classes page to choose learning path
-    router.push('/classes')
+    // Convert subject name to URL-friendly format
+    const subjectSlug = subjectName.toLowerCase().replace(/\s+/g, '-')
+    router.push(`/classroom/${subjectSlug}`)
   }
 
   const features = [
@@ -177,7 +177,16 @@ export default function Home() {
             Pricing
           </Link>
           <div className="flex items-center space-x-3">
-            <UserInfo />
+            <Link href="/sign-in">
+              <Button variant="ghost" className="text-blue-600 hover:bg-blue-50 font-medium">
+                Sign In
+              </Button>
+            </Link>
+            <Link href="/sign-up">
+              <Button className="bg-blue-600 hover:bg-blue-700 font-medium">
+                Sign Up Free
+              </Button>
+            </Link>
           </div>
         </nav>
         <MobileMenuButton />

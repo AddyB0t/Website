@@ -116,7 +116,6 @@ export default function Class6BooksPage() {
         description="Access your NCERT textbooks and supplementary reading materials. Each subject card provides chapter-wise content aligned with your Class 6 curriculum."
         subjects={subjects}
         additionalSections={additionalSections}
-        classId="6"
       />
     </AppLayout>
   )

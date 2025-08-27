@@ -9,7 +9,13 @@ const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/api/test-db-simple(.*)',
-  '/api/ping(.*)'
+  '/api/test-question-availability(.*)',
+  '/api/ping(.*)',
+  '/api/webhook(.*)',  // Allow all webhook routes (Supabase, external services)
+  '/api/questions/available-subjects(.*)',  // Public API for checking available subjects
+  '/api/questions/unified(.*)',  // Public API for fetching questions
+  '/api/questions/stats(.*)',  // Public API for question statistics
+  '/api/admin/question-availability(.*)'  // Admin API for diagnostics (temporary)
 ])
 
 export default clerkMiddleware(async (auth, req) => {

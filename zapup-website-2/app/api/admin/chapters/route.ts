@@ -1,6 +1,6 @@
 // zapup-website-2/app/api/admin/chapters/route.ts
 // API endpoints for chapter management
-// Handles chapter uploads and management for state_school_books
+// Handles chapter uploads and management for books
 
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     // Check if book exists
     const { data: book, error: bookError } = await supabase
-      .from('state_school_books')
+      .from('books')
       .select('id, title')
       .eq('id', bookId)
       .single()
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     // Check if chapter number already exists for this book
     const { data: existingChapter, error: checkError } = await supabase
-      .from('state_school_chapters')
+      .from('chapters')
       .select('id')
       .eq('book_id', bookId)
       .eq('chapter_number', chapterNum)
@@ -101,11 +101,11 @@ export async function POST(request: NextRequest) {
         }, { status: 400 })
       }
 
-      // Validate file size (25MB max for chapters)
-      const maxSize = 25 * 1024 * 1024
+      // Validate file size (100MB max for chapters)
+      const maxSize = 100 * 1024 * 1024
       if (file.size > maxSize) {
         return NextResponse.json({ 
-          error: 'File size must be less than 25MB' 
+          error: 'File size must be less than 100MB' 
         }, { status: 400 })
       }
 
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
 
     // Insert chapter record into database
     const { data: chapter, error: chapterError } = await supabase
-      .from('state_school_chapters')
+      .from('chapters')
       .insert({
         id: chapterId,
         book_id: bookId,
@@ -197,16 +197,15 @@ export async function GET(request: NextRequest) {
     const isActive = searchParams.get('isActive')
 
     let query = supabase
-      .from('state_school_chapters')
+      .from('chapters')
       .select(`
         *,
-        state_school_books!inner(
+        books!inner(
           id,
           title,
-          state,
-          school,
           class_level,
-          subject_id
+          subject_id,
+          school_type
         )
       `)
       .order('chapter_number', { ascending: true })
@@ -253,7 +252,7 @@ export async function DELETE(request: NextRequest) {
 
     // Soft delete - mark as inactive
     const { data: chapter, error } = await supabase
-      .from('state_school_chapters')
+      .from('chapters')
       .update({ is_active: false })
       .eq('id', chapterId)
       .select()

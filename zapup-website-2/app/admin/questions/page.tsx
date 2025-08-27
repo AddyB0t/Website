@@ -9,8 +9,8 @@ export default function QuestionBank() {
           <div className="space-x-2">
             <select className="border border-gray-300 rounded-md text-sm px-3 py-2">
               <option>All Books</option>
-              <option>ICSE Class 6 Maths</option>
-              <option>CBSE Class 9 Science</option>
+              <option>ICSE (Indian Certificate of Secondary Education) Class 6 Maths</option>
+              <option>CBSE (Central Board of Secondary Education) Class 9 Science</option>
             </select>
             <select className="border border-gray-300 rounded-md text-sm px-3 py-2">
               <option>All Chapters</option>
