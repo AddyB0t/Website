@@ -131,13 +131,8 @@ export async function POST(request: NextRequest) {
     console.log(`  BACKEND_URL env var: ${process.env.BACKEND_URL || 'NOT SET (using default)'}`);
     console.log(`  Target URL: ${BACKEND_URL}/process-book`);
     
-    // Call backend with comprehensive timeout handling
+    // Call backend
     console.log('🚀 Making request to backend...');
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      console.log('⏰ Request timed out after 15 minutes');
-      controller.abort();
-    }, 900000); // 15 minute timeout (Vercel maximum)
     
     // Build clean headers object without undefined values
     const headers: Record<string, string> = {};
@@ -151,12 +146,11 @@ export async function POST(request: NextRequest) {
         method: 'POST',
         body: backendFormData,
         headers: headers, // Clean headers without keep-alive conflicts
-        signal: controller.signal // AbortController handles 15-minute timeout
+        // No timeout handling - let request run naturally
       });
       
       console.log(`📡 Backend responded with status: ${backendResponse.status}`);
     } catch (fetchError) {
-      clearTimeout(timeoutId);
       console.error('❌ Failed to reach backend:', fetchError);
       return NextResponse.json(
         { 
@@ -166,8 +160,6 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       );
     }
-    
-    clearTimeout(timeoutId);
 
     if (!backendResponse.ok) {
       const errorText = await backendResponse.text();
@@ -214,15 +206,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Process book API error:', error);
     
-    if (error instanceof Error && error.name === 'AbortError') {
-      return NextResponse.json(
-        { 
-          error: 'Processing timed out', 
-          details: 'The PDF processing took longer than expected (15 minutes). Please try again with a smaller file or contact support.'
-        },
-        { status: 408 }
-      );
-    }
     
     return NextResponse.json(
       { 
