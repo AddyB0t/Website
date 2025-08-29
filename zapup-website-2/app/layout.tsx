@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   title: "ZapUp - Empowering Digital Innovation",
   description:
     "ZapUp is a dynamic technology platform dedicated to empowering digital innovation through accessible solutions.",
-    generator: 'v0.dev'
+  generator: 'v0.dev'
 }
 
 export default function RootLayout({
