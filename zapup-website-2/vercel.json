@@ -2,5 +2,16 @@
   "buildCommand": "npm run build",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "functions": {
+    "app/api/admin/process-book/route.ts": {
+      "maxDuration": 900
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/question-availability",
+      "schedule": "0 */3 * * *"
+    }
+  ]
 } 
