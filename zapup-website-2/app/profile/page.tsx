@@ -27,7 +27,7 @@ import {
   Settings
 } from 'lucide-react'
 import { useUserPreferences } from '@/contexts/UserPreferencesContext'
-import { getStateNames, getSchoolsByState } from '@/lib/states-schools-data'
+import { getStateNames, getSchoolsByState, getSchoolsByStateAndBoard } from '@/lib/states-schools-data'
 import { getSubjectsByClass } from '@/lib/subjects'
 import { canAccessClass } from '@/lib/access-control'
 import Head from 'next/head'
@@ -157,8 +157,8 @@ export default function ProfilePage() {
     const query = e.target.value
     setSchoolSearchQuery(query)
     
-    if (query.length > 0 && selectedState) {
-      const schools = getSchoolsByState(selectedState)
+    if (query.length > 0 && selectedState && selectedBoard) {
+      const schools = getSchoolsByStateAndBoard(selectedState, selectedBoard)
       const filtered = schools.filter(school =>
         school.name.toLowerCase().includes(query.toLowerCase()) ||
         school.city.toLowerCase().includes(query.toLowerCase())
@@ -175,6 +175,14 @@ export default function ProfilePage() {
   const handleSchoolSelect = (school: {name: string, city: string, board: string}) => {
     setSelectedSchool(school.name)
     setSchoolSearchQuery(school.name)
+    setShowSchoolSuggestions(false)
+  }
+
+  // Handle board change
+  const handleBoardChange = (value: string) => {
+    setSelectedBoard(value)
+    setSelectedSchool('')
+    setSchoolSearchQuery('')
     setShowSchoolSuggestions(false)
   }
 
@@ -334,7 +342,7 @@ export default function ProfilePage() {
                           <GraduationCap className="w-4 h-4 inline mr-1" />
                           School Board
                         </label>
-                        <Select value={selectedBoard} onValueChange={setSelectedBoard}>
+                        <Select value={selectedBoard} onValueChange={handleBoardChange}>
                           <SelectTrigger>
                             <SelectValue placeholder="Select your school board" />
                           </SelectTrigger>
@@ -358,7 +366,7 @@ export default function ProfilePage() {
                         </label>
                         <Input
                           type="text"
-                          placeholder="Search for your school..."
+                          placeholder="Search for your school (filtered by board)..."
                           value={schoolSearchQuery}
                           onChange={handleSchoolSearchChange}
                           onBlur={handleSchoolInputBlur}
