@@ -423,6 +423,7 @@ export const INDIAN_STATES_SCHOOLS: StateData[] = [
     schools: [
       { name: "La Martiniere for Boys", city: "Kolkata", board: "ICSE (Indian Certificate of Secondary Education)" },
       { name: "St. Xavier's Collegiate School", city: "Kolkata", board: "ICSE (Indian Certificate of Secondary Education)" },
+      { name: "The Bhawanipur Gujarati Education Society School", city: "Kolkata", board: "ICSE (Indian Certificate of Secondary Education)" },
       { name: "South Point High School", city: "Kolkata", board: "ICSE (Indian Certificate of Secondary Education)" },
       { name: "Loreto House", city: "Kolkata", board: "ICSE (Indian Certificate of Secondary Education)" },
       { name: "Modern High School for Girls", city: "Kolkata", board: "ICSE (Indian Certificate of Secondary Education)" },
