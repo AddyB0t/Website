@@ -18,6 +18,9 @@ import {
   Clock,
   DollarSign,
   Scale,
+  GraduationCap,
+  Monitor,
+  TrendingUp,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -58,13 +61,28 @@ function SubjectCard({ icon, title, description, color, href }: SubjectCardProps
 export default function Class10Classroom() {
   const { preferences } = useUserPreferences()
   
-  // Check if user is from Bhawanipur Gujarati Education Society School
+  // Check if user is from Bhawanipur school (for specialized English subjects)
   const isBhawanipurStudent = preferences.school === "The Bhawanipur Gujarati Education Society School"
   
-  // Function to get English subjects based on school
-  const getEnglishSubjects = () => {
+  // Check if user is studying ICSE board (for Extra subjects access)
+  const isICSEStudent = preferences.schoolBoard?.includes("ICSE") || 
+                        preferences.schoolBoard === "ICSE (Indian Certificate of Secondary Education)" ||
+                        preferences.schoolBoard === "ICSE"
+  
+  // Debug logging to troubleshoot preference loading
+  console.log("User preferences:", preferences)
+  console.log("School Board:", preferences.schoolBoard)
+  console.log("Is Bhawanipur Student:", isBhawanipurStudent)
+  console.log("Is ICSE Student:", isICSEStudent)
+  
+  // Function to get all subjects based on school and board
+  const getSubjectsForBoard = () => {
+    let subjects = {}
+    
+    // Add specialized English subjects for Bhawanipur students
     if (isBhawanipurStudent) {
-      return {
+      subjects = {
+        ...subjects,
         "english-shakespeare": {
           icon: <Languages className="w-6 h-6" />,
           title: "English - Shakespeare",
@@ -82,21 +100,59 @@ export default function Class10Classroom() {
           topics: ["The Cold Within", "The Glove and the Lions", "Chief Seattle's Speech", "Poetry Analysis", "Story Comprehension", "Literary Devices", "Theme Interpretation", "Critical Analysis"]
         }
       }
-    }
-    return {
-      english: {
-        icon: <Languages className="w-6 h-6" />,
-        title: "English",
-        description: "Board exam preparation with advanced literature, poetry, and writing skills for Class 10.",
-        color: "border-red-500",
-        href: "/classroom/english",
-        topics: ["A Letter to God", "Nelson Mandela: Long Walk to Freedom", "Two Stories about Flying", "From the Diary of Anne Frank", "The Hundred Dresses-I", "The Hundred Dresses-II", "Glimpses of India", "Mijbil the Otter", "Madam Rides the Bus", "The Sermon at Benares", "The Proposal"]
+    } else {
+      // Default English subject for non-Bhawanipur students
+      subjects = {
+        ...subjects,
+        english: {
+          icon: <Languages className="w-6 h-6" />,
+          title: "English",
+          description: "Board exam preparation with advanced literature, poetry, and writing skills for Class 10.",
+          color: "border-red-500",
+          href: "/classroom/english",
+          topics: ["A Letter to God", "Nelson Mandela: Long Walk to Freedom", "Two Stories about Flying", "From the Diary of Anne Frank", "The Hundred Dresses-I", "The Hundred Dresses-II", "Glimpses of India", "Mijbil the Otter", "Madam Rides the Bus", "The Sermon at Benares", "The Proposal"]
+        }
       }
     }
+    
+    // Add Extra subjects for all ICSE students
+    if (isICSEStudent) {
+      subjects = {
+        ...subjects,
+        extra: {
+          icon: <GraduationCap className="w-6 h-6" />,
+          title: "Extra Subjects",
+          description: "Additional specialized subjects for comprehensive ICSE Class 10 preparation.",
+          color: "border-indigo-500",
+          href: "/classroom/extra",
+          isExtraSubjects: true,
+          extraSubjects: [
+            {
+              id: "computer-science",
+              title: "Computer Science",
+              description: "Programming fundamentals, algorithms, and computer applications for Class 10 ICSE.",
+              icon: <Monitor className="w-6 h-6" />,
+              href: "/classroom/computer-science",
+              topics: ["Programming Concepts", "Data Structures", "Algorithms", "Computer Hardware", "Software Applications", "Database Basics", "Internet & Web", "Digital Ethics"]
+            },
+            {
+              id: "commercial-study",
+              title: "Commercial Study", 
+              description: "Business fundamentals, economics, and commercial practices for Class 10 ICSE.",
+              icon: <TrendingUp className="w-6 h-6" />,
+              href: "/classroom/commercial-study",
+              topics: ["Business Basics", "Economics Principles", "Banking & Finance", "Trade & Commerce", "Entrepreneurship", "Marketing Fundamentals", "Accounting Basics", "Business Ethics"]
+            }
+          ]
+        }
+      }
+    }
+    
+    return subjects
   }
   
   const subjects = {
-    ...getEnglishSubjects(),
+    ...getSubjectsForBoard(),
     hindi: {
       icon: <BookOpen className="w-6 h-6" />,
       title: "Hindi",
@@ -190,19 +246,21 @@ export default function Class10Classroom() {
         <Tabs defaultValue={isBhawanipurStudent ? "english-shakespeare" : "english"} className="w-full">
           <div className="mb-6">
             <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
-              <TabsList className={`grid ${isBhawanipurStudent ? 'grid-cols-4' : 'grid-cols-3'} col-span-2 md:col-span-3`}>
+              <TabsList className={`grid ${isBhawanipurStudent && isICSEStudent ? 'grid-cols-5' : isICSEStudent || isBhawanipurStudent ? 'grid-cols-4' : 'grid-cols-3'} col-span-2 md:col-span-3`}>
                 {isBhawanipurStudent ? (
                   <>
                     <TabsTrigger value="english-shakespeare" className="font-semibold text-xs">Shakespeare</TabsTrigger>
                     <TabsTrigger value="english-poems-stories" className="font-semibold text-xs">Poems & Stories</TabsTrigger>
                     <TabsTrigger value="hindi" className="font-semibold text-xs">Hindi</TabsTrigger>
                     <TabsTrigger value="mathematics" className="font-semibold text-xs">Mathematics</TabsTrigger>
+                    {isICSEStudent && <TabsTrigger value="extra" className="font-semibold text-xs">Extra</TabsTrigger>}
                   </>
                 ) : (
                   <>
                     <TabsTrigger value="english" className="font-semibold text-xs">English</TabsTrigger>
                     <TabsTrigger value="hindi" className="font-semibold text-xs">Hindi</TabsTrigger>
                     <TabsTrigger value="mathematics" className="font-semibold text-xs">Mathematics</TabsTrigger>
+                    {isICSEStudent && <TabsTrigger value="extra" className="font-semibold text-xs">Extra</TabsTrigger>}
                   </>
                 )}
               </TabsList>
@@ -223,30 +281,53 @@ export default function Class10Classroom() {
 
           {Object.entries(subjects).map(([key, subject]) => (
             <TabsContent key={key} value={key} className="space-y-6">
-              <div className="grid grid-cols-1 gap-6">
-                {/* Topics Card */}
-                <Card className="bg-gradient-to-br from-white to-gray-50 border border-gray-200">
-                  <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
-                    <CardTitle className="flex items-center space-x-2 text-gray-800">
-                      {subject.icon}
-                      <span>{subject.title} Topics</span>
-                    </CardTitle>
-                    <CardDescription>
-                      Key topics and chapters covered in Class 10 {subject.title} for board exam preparation
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {subject.topics.map((topic, index) => (
-                        <div key={index} className="flex items-start space-x-3 p-3 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-shadow">
-                          <span className="text-blue-600 font-bold text-sm">{index + 1}.</span>
-                          <span className="text-gray-800 font-medium text-sm">{topic}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+              {key === 'extra' && subject.isExtraSubjects ? (
+                // Special handling for Extra tab - show subject cards
+                <div className="grid grid-cols-1 gap-6">
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Additional Subjects</h2>
+                    <p className="text-gray-600">Specialized subjects to enhance your ICSE Class 10 preparation with practical and commercial knowledge.</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {subject.extraSubjects.map((extraSubject) => (
+                      <SubjectCard
+                        key={extraSubject.id}
+                        icon={extraSubject.icon}
+                        title={extraSubject.title}
+                        description={extraSubject.description}
+                        color="border-indigo-500"
+                        href={extraSubject.href}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                // Regular subject content with topics
+                <div className="grid grid-cols-1 gap-6">
+                  {/* Topics Card */}
+                  <Card className="bg-gradient-to-br from-white to-gray-50 border border-gray-200">
+                    <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
+                      <CardTitle className="flex items-center space-x-2 text-gray-800">
+                        {subject.icon}
+                        <span>{subject.title} Topics</span>
+                      </CardTitle>
+                      <CardDescription>
+                        Key topics and chapters covered in Class 10 {subject.title} for board exam preparation
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {subject.topics?.map((topic, index) => (
+                          <div key={index} className="flex items-start space-x-3 p-3 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-shadow">
+                            <span className="text-blue-600 font-bold text-sm">{index + 1}.</span>
+                            <span className="text-gray-800 font-medium text-sm">{topic}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </TabsContent>
           ))}
         </Tabs>
