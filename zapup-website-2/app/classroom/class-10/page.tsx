@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useUserPreferences } from "@/contexts/UserPreferencesContext"
 import {
   BookOpen,
   Calculator,
@@ -55,15 +56,47 @@ function SubjectCard({ icon, title, description, color, href }: SubjectCardProps
 }
 
 export default function Class10Classroom() {
+  const { preferences } = useUserPreferences()
+  
+  // Check if user is from Bhawanipur Gujarati Education Society School
+  const isBhawanipurStudent = preferences.school === "The Bhawanipur Gujarati Education Society School"
+  
+  // Function to get English subjects based on school
+  const getEnglishSubjects = () => {
+    if (isBhawanipurStudent) {
+      return {
+        "english-shakespeare": {
+          icon: <Languages className="w-6 h-6" />,
+          title: "English - Shakespeare",
+          description: "Shakespeare's plays and sonnets for ICSE Class 10 board preparation.",
+          color: "border-red-500",
+          href: "/classroom/english-shakespeare",
+          topics: ["Romeo and Juliet", "The Merchant of Venice", "Julius Caesar", "Sonnets Analysis", "Character Studies", "Theme Analysis", "Dramatic Techniques", "Language and Style"]
+        },
+        "english-poems-stories": {
+          icon: <BookOpen className="w-6 h-6" />,
+          title: "English - Short Poems & Stories",
+          description: "Collection of short poems and stories for ICSE Class 10 literature.",
+          color: "border-rose-500",
+          href: "/classroom/english-poems-stories",
+          topics: ["The Cold Within", "The Glove and the Lions", "Chief Seattle's Speech", "Poetry Analysis", "Story Comprehension", "Literary Devices", "Theme Interpretation", "Critical Analysis"]
+        }
+      }
+    }
+    return {
+      english: {
+        icon: <Languages className="w-6 h-6" />,
+        title: "English",
+        description: "Board exam preparation with advanced literature, poetry, and writing skills for Class 10.",
+        color: "border-red-500",
+        href: "/classroom/english",
+        topics: ["A Letter to God", "Nelson Mandela: Long Walk to Freedom", "Two Stories about Flying", "From the Diary of Anne Frank", "The Hundred Dresses-I", "The Hundred Dresses-II", "Glimpses of India", "Mijbil the Otter", "Madam Rides the Bus", "The Sermon at Benares", "The Proposal"]
+      }
+    }
+  }
+  
   const subjects = {
-    english: {
-      icon: <Languages className="w-6 h-6" />,
-      title: "English",
-      description: "Board exam preparation with advanced literature, poetry, and writing skills for Class 10.",
-      color: "border-red-500",
-      href: "/classroom/english",
-      topics: ["A Letter to God", "Nelson Mandela: Long Walk to Freedom", "Two Stories about Flying", "From the Diary of Anne Frank", "The Hundred Dresses-I", "The Hundred Dresses-II", "Glimpses of India", "Mijbil the Otter", "Madam Rides the Bus", "The Sermon at Benares", "The Proposal"]
-    },
+    ...getEnglishSubjects(),
     hindi: {
       icon: <BookOpen className="w-6 h-6" />,
       title: "Hindi",
@@ -135,6 +168,14 @@ export default function Class10Classroom() {
       color: "border-indigo-500",
       href: "/classroom/social-studies/political-science",
       topics: ["Power Sharing", "Federalism", "Democracy and Diversity", "Gender, Religion and Caste", "Popular Struggles and Movements", "Political Parties", "Outcomes of Democracy", "Challenges to Democracy"]
+    },
+    labs: {
+      icon: <FlaskConical className="w-6 h-6" />,
+      title: "Labs",
+      description: "Hands-on laboratory experiments for Biology, Chemistry, and Physics with practical applications.",
+      color: "border-purple-500",
+      href: "/classroom/labs",
+      topics: ["Biology Lab Experiments", "Chemistry Lab Experiments", "Physics Lab Experiments", "Scientific Method", "Data Analysis", "Lab Safety", "Equipment Usage", "Practical Applications"]
     }
   }
 
@@ -146,18 +187,30 @@ export default function Class10Classroom() {
           <p className="text-gray-600">Master your board exams with comprehensive preparation content designed for Class 10 students across all subjects.</p>
         </div>
 
-        <Tabs defaultValue="english" className="w-full">
+        <Tabs defaultValue={isBhawanipurStudent ? "english-shakespeare" : "english"} className="w-full">
           <div className="mb-6">
             <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
-              <TabsList className="grid grid-cols-3 col-span-2 md:col-span-3">
-                <TabsTrigger value="english" className="font-semibold text-xs">English</TabsTrigger>
-                <TabsTrigger value="hindi" className="font-semibold text-xs">Hindi</TabsTrigger>
-                <TabsTrigger value="mathematics" className="font-semibold text-xs">Mathematics</TabsTrigger>
+              <TabsList className={`grid ${isBhawanipurStudent ? 'grid-cols-4' : 'grid-cols-3'} col-span-2 md:col-span-3`}>
+                {isBhawanipurStudent ? (
+                  <>
+                    <TabsTrigger value="english-shakespeare" className="font-semibold text-xs">Shakespeare</TabsTrigger>
+                    <TabsTrigger value="english-poems-stories" className="font-semibold text-xs">Poems & Stories</TabsTrigger>
+                    <TabsTrigger value="hindi" className="font-semibold text-xs">Hindi</TabsTrigger>
+                    <TabsTrigger value="mathematics" className="font-semibold text-xs">Mathematics</TabsTrigger>
+                  </>
+                ) : (
+                  <>
+                    <TabsTrigger value="english" className="font-semibold text-xs">English</TabsTrigger>
+                    <TabsTrigger value="hindi" className="font-semibold text-xs">Hindi</TabsTrigger>
+                    <TabsTrigger value="mathematics" className="font-semibold text-xs">Mathematics</TabsTrigger>
+                  </>
+                )}
               </TabsList>
-              <TabsList className="grid grid-cols-3 col-span-2">
+              <TabsList className="grid grid-cols-4 col-span-2">
                 <TabsTrigger value="physics" className="font-semibold text-xs">Physics</TabsTrigger>
                 <TabsTrigger value="chemistry" className="font-semibold text-xs">Chemistry</TabsTrigger>
                 <TabsTrigger value="biology" className="font-semibold text-xs">Biology</TabsTrigger>
+                <TabsTrigger value="labs" className="font-semibold text-xs">Labs</TabsTrigger>
               </TabsList>
             </div>
             <TabsList className="grid grid-cols-4 w-full">
