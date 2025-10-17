@@ -1,7 +1,7 @@
 // Stream-based subject mappings for Classes 11-12
 // This file defines which subjects are available for each stream
 
-import { Calculator, Atom, TestTube, Leaf, Building, TrendingUp, Receipt, Clock, Globe, Scale, Brain, Languages, BookOpen } from 'lucide-react'
+import { Calculator, Atom, TestTube, Leaf, Building, TrendingUp, Receipt, Clock, Globe, Scale, Brain, Languages, BookOpen, FlaskConical } from 'lucide-react'
 
 export interface SubjectInfo {
   id: string
@@ -124,6 +124,102 @@ const SUBJECT_DEFINITIONS: Record<string, SubjectInfo> = {
     icon: <BookOpen className="w-6 h-6" />,
     color: 'from-orange-500 to-amber-500',
     bgColor: 'from-orange-50 to-amber-50'
+  },
+  computer: {
+    id: 'computer',
+    name: 'Computer',
+    description: 'Computer Science fundamentals, Programming, Algorithms',
+    icon: <BookOpen className="w-6 h-6" />,
+    color: 'from-cyan-500 to-blue-500',
+    bgColor: 'from-cyan-50 to-blue-50'
+  },
+  'english-shakespeare': {
+    id: 'english-shakespeare',
+    name: 'English - Shakespeare',
+    description: 'Shakespeare\'s plays, sonnets, and dramatic works',
+    icon: <Languages className="w-6 h-6" />,
+    color: 'from-purple-600 to-indigo-600',
+    bgColor: 'from-purple-50 to-indigo-50'
+  },
+  'english-poetry': {
+    id: 'english-poetry',
+    name: 'English - Poetry',
+    description: 'Classical and modern poetry, literary devices, poetic forms',
+    icon: <BookOpen className="w-6 h-6" />,
+    color: 'from-pink-500 to-purple-500',
+    bgColor: 'from-pink-50 to-purple-50'
+  },
+  'history-civics': {
+    id: 'history-civics',
+    name: 'History & Civics',
+    description: 'Historical events, Civic studies, Political systems',
+    icon: <Globe className="w-6 h-6" />,
+    color: 'from-amber-600 to-orange-600',
+    bgColor: 'from-amber-50 to-orange-50'
+  },
+  'biology-lab': {
+    id: 'biology-lab',
+    name: 'Biology Lab',
+    description: 'Microscopy, Dissection, Cell Studies, Practical experiments',
+    icon: <FlaskConical className="w-6 h-6" />,
+    color: 'from-emerald-500 to-teal-500',
+    bgColor: 'from-emerald-50 to-teal-50'
+  },
+  'chemistry-lab': {
+    id: 'chemistry-lab',
+    name: 'Chemistry Lab',
+    description: 'Chemical reactions, Titrations, Analysis, Practical experiments',
+    icon: <FlaskConical className="w-6 h-6" />,
+    color: 'from-green-500 to-emerald-500',
+    bgColor: 'from-green-50 to-emerald-50'
+  },
+  'physics-lab': {
+    id: 'physics-lab',
+    name: 'Physics Lab',
+    description: 'Mechanics, Optics, Electricity, Magnetism, Practical experiments',
+    icon: <FlaskConical className="w-6 h-6" />,
+    color: 'from-blue-500 to-cyan-500',
+    bgColor: 'from-blue-50 to-cyan-50'
+  },
+  'commercial-studies': {
+    id: 'commercial-studies',
+    name: 'Commercial Studies',
+    description: 'Business, Trade, Commerce, Economic concepts',
+    icon: <Receipt className="w-6 h-6" />,
+    color: 'from-amber-500 to-orange-500',
+    bgColor: 'from-amber-50 to-orange-50'
+  },
+  history: {
+    id: 'history',
+    name: 'History',
+    description: 'Historical events, Civilizations, World history',
+    icon: <Clock className="w-6 h-6" />,
+    color: 'from-purple-500 to-pink-500',
+    bgColor: 'from-purple-50 to-pink-50'
+  },
+  'environmental-studies': {
+    id: 'environmental-studies',
+    name: 'Environmental Studies',
+    description: 'Ecology, Conservation, Sustainability, Environmental Science',
+    icon: <Leaf className="w-6 h-6" />,
+    color: 'from-green-600 to-teal-600',
+    bgColor: 'from-green-50 to-teal-50'
+  },
+  'computer-science': {
+    id: 'computer-science',
+    name: 'Computer Science',
+    description: 'Programming, Data Structures, Algorithms, Database Management',
+    icon: <BookOpen className="w-6 h-6" />,
+    color: 'from-indigo-500 to-purple-500',
+    bgColor: 'from-indigo-50 to-purple-50'
+  },
+  commerce: {
+    id: 'commerce',
+    name: 'Commerce',
+    description: 'Commercial Applications, Trade, Banking, Insurance',
+    icon: <Receipt className="w-6 h-6" />,
+    color: 'from-yellow-500 to-orange-500',
+    bgColor: 'from-yellow-50 to-orange-50'
   }
 }
 
@@ -139,6 +235,7 @@ export const STREAM_SUBJECTS: Record<string, Record<string, StreamInfo>> = {
         SUBJECT_DEFINITIONS.chemistry,
         SUBJECT_DEFINITIONS.biology,
         SUBJECT_DEFINITIONS.mathematics,
+        SUBJECT_DEFINITIONS['environmental-studies'],
         SUBJECT_DEFINITIONS.english
       ]
     },
@@ -151,6 +248,7 @@ export const STREAM_SUBJECTS: Record<string, Record<string, StreamInfo>> = {
         SUBJECT_DEFINITIONS.economics,
         SUBJECT_DEFINITIONS.accountancy,
         SUBJECT_DEFINITIONS.mathematics,
+        SUBJECT_DEFINITIONS['environmental-studies'],
         SUBJECT_DEFINITIONS.english
       ]
     },
@@ -163,6 +261,7 @@ export const STREAM_SUBJECTS: Record<string, Record<string, StreamInfo>> = {
         SUBJECT_DEFINITIONS.geography,
         SUBJECT_DEFINITIONS['political-science'],
         SUBJECT_DEFINITIONS.psychology,
+        SUBJECT_DEFINITIONS['environmental-studies'],
         SUBJECT_DEFINITIONS.english
       ]
     }
@@ -177,6 +276,7 @@ export const STREAM_SUBJECTS: Record<string, Record<string, StreamInfo>> = {
         SUBJECT_DEFINITIONS.chemistry,
         SUBJECT_DEFINITIONS.biology,
         SUBJECT_DEFINITIONS.mathematics,
+        SUBJECT_DEFINITIONS['environmental-studies'],
         SUBJECT_DEFINITIONS.english
       ]
     },
@@ -188,7 +288,10 @@ export const STREAM_SUBJECTS: Record<string, Record<string, StreamInfo>> = {
         SUBJECT_DEFINITIONS['business-studies'],
         SUBJECT_DEFINITIONS.economics,
         SUBJECT_DEFINITIONS.accountancy,
+        SUBJECT_DEFINITIONS.commerce,
+        SUBJECT_DEFINITIONS['computer-science'],
         SUBJECT_DEFINITIONS.mathematics,
+        SUBJECT_DEFINITIONS['environmental-studies'],
         SUBJECT_DEFINITIONS.english
       ]
     },
@@ -201,6 +304,7 @@ export const STREAM_SUBJECTS: Record<string, Record<string, StreamInfo>> = {
         SUBJECT_DEFINITIONS.geography,
         SUBJECT_DEFINITIONS['political-science'],
         SUBJECT_DEFINITIONS.psychology,
+        SUBJECT_DEFINITIONS['environmental-studies'],
         SUBJECT_DEFINITIONS.english
       ]
     }
@@ -274,45 +378,30 @@ export const DEFAULT_SUBJECTS: Record<string, SubjectInfo[]> = {
   ],
   '9': [
     SUBJECT_DEFINITIONS.mathematics,
-    {
-      id: 'science',
-      name: 'Science',
-      description: 'Physics, Chemistry, Biology - Foundation level',
-      icon: <Atom className="w-6 h-6" />,
-      color: 'from-green-500 to-emerald-500',
-      bgColor: 'from-green-50 to-emerald-50'
-    },
-    {
-      id: 'social-science',
-      name: 'Social Science',
-      description: 'History, Geography, Political Science, Economics',
-      icon: <Globe className="w-6 h-6" />,
-      color: 'from-blue-500 to-teal-500',
-      bgColor: 'from-blue-50 to-teal-50'
-    },
-    SUBJECT_DEFINITIONS.english,
-    SUBJECT_DEFINITIONS.hindi
+    SUBJECT_DEFINITIONS.physics,
+    SUBJECT_DEFINITIONS.chemistry,
+    SUBJECT_DEFINITIONS.computer,
+    SUBJECT_DEFINITIONS['english-shakespeare'],
+    SUBJECT_DEFINITIONS['english-poetry'],
+    SUBJECT_DEFINITIONS.geography,
+    SUBJECT_DEFINITIONS['history-civics'],
+    SUBJECT_DEFINITIONS['biology-lab'],
+    SUBJECT_DEFINITIONS['chemistry-lab'],
+    SUBJECT_DEFINITIONS['physics-lab']
   ],
   '10': [
     SUBJECT_DEFINITIONS.mathematics,
-    {
-      id: 'science',
-      name: 'Science',
-      description: 'Physics, Chemistry, Biology - Board exam level',
-      icon: <Atom className="w-6 h-6" />,
-      color: 'from-green-500 to-emerald-500',
-      bgColor: 'from-green-50 to-emerald-50'
-    },
-    {
-      id: 'social-science',
-      name: 'Social Science',
-      description: 'History, Geography, Political Science, Economics',
-      icon: <Globe className="w-6 h-6" />,
-      color: 'from-blue-500 to-teal-500',
-      bgColor: 'from-blue-50 to-teal-50'
-    },
-    SUBJECT_DEFINITIONS.english,
-    SUBJECT_DEFINITIONS.hindi
+    SUBJECT_DEFINITIONS.physics,
+    SUBJECT_DEFINITIONS.chemistry,
+    SUBJECT_DEFINITIONS.biology,
+    SUBJECT_DEFINITIONS['biology-lab'],
+    SUBJECT_DEFINITIONS['chemistry-lab'],
+    SUBJECT_DEFINITIONS['physics-lab'],
+    SUBJECT_DEFINITIONS.computer,
+    SUBJECT_DEFINITIONS['commercial-studies'],
+    SUBJECT_DEFINITIONS['english-shakespeare'],
+    SUBJECT_DEFINITIONS.geography,
+    SUBJECT_DEFINITIONS.history
   ]
 }
 

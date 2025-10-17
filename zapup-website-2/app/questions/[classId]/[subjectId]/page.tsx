@@ -221,7 +221,7 @@ export default function SubjectQuestionsPage() {
         
         const data = await response.json()
         setChapters(data.chapters || [])
-        
+
         // Auto-expand first chapter and load its sections
         if (data.chapters && data.chapters.length > 0) {
           const firstChapter = data.chapters[0]

@@ -147,81 +147,23 @@ export default function BooksClassPage() {
           </Card>
         )}
 
-        {/* Subjects Grid */}
-        {subjects.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {subjects.map((subject) => (
-              <Card 
-                key={subject.id}
-                className="bg-white border border-gray-200 hover:shadow-lg transition-all duration-200 cursor-pointer group"
-                onClick={() => handleSubjectClick(subject.id)}
-              >
-                <CardHeader className="bg-gradient-to-br from-green-50 to-emerald-50 border-b border-gray-100">
-                  <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      {getSubjectIcon(subject.id)}
-                      <span className="text-gray-800">{subject.name}</span>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-green-600 transition-colors" />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      {getBookTypes().slice(0, 2).map((type) => (
-                        <div key={type.id} className="flex items-center space-x-2">
-                          <FileText className="w-4 h-4 text-green-600" />
-                          <span className="text-gray-600">{type.name}</span>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <div className="flex items-center justify-between text-sm">
-                      <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-                        {Math.floor(Math.random() * 5) + 3} Books
-                      </Badge>
-                      <div className="flex items-center space-x-2 text-gray-500">
-                        <Download className="w-4 h-4" />
-                        <span>PDF Available</span>
-                      </div>
-                    </div>
-
-                    <Button 
-                      className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleSubjectClick(subject.id)
-                      }}
-                    >
-                      <Eye className="w-4 h-4 mr-2" />
-                      View Books
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : needsStream && !selectedStream ? (
-          <Card className="bg-gray-50 border border-gray-200">
-            <CardContent className="p-12 text-center">
-              <GraduationCap className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">Select Your Stream</h3>
-              <p className="text-gray-500">
-                Please select your stream above to see available books for Class {classNumber}
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="bg-gray-50 border border-gray-200">
-            <CardContent className="p-12 text-center">
-              <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">No Books Available</h3>
-              <p className="text-gray-500">
-                Books for Class {classNumber} are coming soon!
-              </p>
-            </CardContent>
-          </Card>
-        )}
+        {/* Coming Soon Message - Books temporarily disabled */}
+        <Card className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200">
+          <CardContent className="p-12 text-center">
+            <div className="flex justify-center mb-6">
+              <div className="bg-orange-100 p-4 rounded-full">
+                <BookOpen className="w-16 h-16 text-orange-600" />
+              </div>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-3">Coming Soon</h3>
+            <p className="text-gray-600 text-lg mb-2">
+              Excel in your board exams with comprehensive Class {classNumber} books. Questions coming soon!
+            </p>
+            <p className="text-gray-500 text-sm">
+              We're preparing high-quality textbooks, reference materials, and study guides for all subjects
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Book Categories */}
         {subjects.length > 0 && false && (

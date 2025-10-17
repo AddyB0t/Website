@@ -4,7 +4,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { AppLayout } from '@/components/AppLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,16 +12,16 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Brain, BookOpen, ChevronRight, Star, Clock, Users, GraduationCap } from 'lucide-react'
 import Link from 'next/link'
-import { 
-  getSubjectsForClass, 
-  getStreamsForClass, 
-  getStreamInfo, 
+import {
+  getSubjectsForClass,
+  getStreamsForClass,
+  getStreamInfo,
   isStreamBasedClass,
   type SubjectInfo,
-  type StreamInfo 
+  type StreamInfo
 } from '@/lib/stream-subjects'
 
-export default function QuestionClassPage() {
+function QuestionClassPageContent() {
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -32,6 +32,7 @@ export default function QuestionClassPage() {
   const [streams, setStreams] = useState<StreamInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [expandedSubject, setExpandedSubject] = useState<string | null>(null)
   
   // Extract class ID directly (supports both formats: "6", "class-6", "class-6th")
   const classId = params.classId as string
@@ -81,16 +82,24 @@ export default function QuestionClassPage() {
   }
   const fetchAvailableSubjects = async () => {
     try {
+      // Use ICSE for Class 9-12, CBSE for others
+      // Note: Class 11-12 ISC books are actually stored as ICSE in the database
+      let boardType = 'CBSE'
+      if (classNumber === '9' || classNumber === '10' || classNumber === '11' || classNumber === '12') {
+        boardType = 'ICSE (Indian Certificate of Secondary Education)'
+      }
+
       const params = new URLSearchParams({
         class: classNumber,
-        board: 'CBSE'
+        board: boardType
       })
-      
+
       const response = await fetch(`/api/questions/available-subjects?${params}`)
-      
+
       if (response.ok) {
         const data = await response.json()
         const availableSubjectIds = data.availableSubjects?.map((s: any) => s.subject) || []
+        console.log('Available subjects from API:', availableSubjectIds)
         setAvailableSubjects(availableSubjectIds)
       }
     } catch (error) {
@@ -107,16 +116,23 @@ export default function QuestionClassPage() {
     router.replace(`/questions/${classId}?${params.toString()}`)
   }
 
-  const handleSubjectClick = (subjectId: string, available: boolean) => {
+  const handleSubjectClick = (subject: SubjectInfo, available: boolean) => {
+    // If this subject has sub-subjects (like Lab or English Literature), show them
+    if (subject.hasSubSubjects && subject.subSubjects) {
+      // Don't navigate, instead show sub-subjects in a modal or expand inline
+      setExpandedSubject(subject.id === expandedSubject ? null : subject.id)
+      return
+    }
+
     if (available) {
       const params = new URLSearchParams()
       params.set('board', 'CBSE')
-      
+
       if (isStreamBasedClass(classNumber) && selectedStream) {
         params.set('stream', selectedStream)
       }
-      
-      router.push(`/questions/${classId}/${subjectId}?${params.toString()}`)
+
+      router.push(`/questions/${classId}/${subject.id}?${params.toString()}`)
     }
   }
 
@@ -143,15 +159,44 @@ export default function QuestionClassPage() {
     }
   }
 
-  // Filter subjects based on availability
-  const categorizeSubjects = () => {
-    const available = subjects.filter(subject => availableSubjects.includes(subject.id))
-    const comingSoon = subjects.filter(subject => !availableSubjects.includes(subject.id))
-    
-    return { available, comingSoon }
+  // Subject name alias mapping (database name → subject ID)
+  const subjectAliases: Record<string, string[]> = {
+    'accountancy': ['accounts', 'accountancy'],
+    'business-studies': ['business-studies', 'business studies'],
+    'environmental-studies': ['environmental-studies', 'environmental studies'],
+    'political-science': ['political-science', 'political science']
   }
 
-  const { available: availableSubjectsList, comingSoon: comingSoonSubjects } = categorizeSubjects()
+  // Helper function to check if a subject is available
+  const isSubjectAvailable = (subjectId: string): boolean => {
+    const normalizedAvailableSubjects = availableSubjects.map(s => s.toLowerCase().replace(/\s+/g, '-'))
+    const normalizedId = subjectId.toLowerCase().replace(/\s+/g, '-')
+
+    // Check if subject ID matches directly
+    if (normalizedAvailableSubjects.includes(normalizedId)) {
+      console.log(`✓ ${subjectId} available (direct match)`)
+      return true
+    }
+
+    // Check aliases
+    const aliases = subjectAliases[normalizedId]
+    if (aliases) {
+      const matched = aliases.some(alias =>
+        normalizedAvailableSubjects.includes(alias.toLowerCase().replace(/\s+/g, '-'))
+      )
+      if (matched) {
+        console.log(`✓ ${subjectId} available (alias match)`)
+      }
+      return matched
+    }
+
+    return false
+  }
+
+  console.log('=== RENDER DEBUG ===')
+  console.log('Available subjects from API:', availableSubjects)
+  console.log('Current subjects:', subjects.map(s => s.id))
+
   const currentStreamInfo = selectedStream ? getStreamInfo(classNumber, selectedStream) : null
 
   if (loading) {
@@ -213,29 +258,35 @@ export default function QuestionClassPage() {
         {/* Stream Selection for Classes 11-12 */}
         {isStreamBasedClass(classNumber) && streams.length > 0 && (
           <div className="mb-8">
-            <Card>
+            <Card className="bg-white dark:bg-white border-gray-200">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <GraduationCap className="w-5 h-5" />
+                <CardTitle className="flex items-center space-x-2 text-gray-900">
+                  <GraduationCap className="w-5 h-5 text-purple-600" />
                   <span>Select Your Academic Stream</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                   {streams.map((stream) => (
-                    <Card 
+                    <Card
                       key={stream.id}
                       className={`cursor-pointer transition-all duration-200 ${
-                        selectedStream === stream.id 
-                          ? 'border-blue-500 bg-blue-50 shadow-md' 
-                          : 'hover:shadow-md border-gray-200'
+                        selectedStream === stream.id
+                          ? 'border-blue-500 bg-blue-50 shadow-md'
+                          : 'hover:shadow-md border-gray-200 bg-white'
                       }`}
                       onClick={() => handleStreamChange(stream.id)}
                     >
                       <CardContent className="p-4">
-                        <h3 className="font-semibold text-lg mb-2">{stream.name}</h3>
-                        <p className="text-sm text-gray-600 mb-3">{stream.description}</p>
-                        <div className="flex items-center text-sm text-gray-500">
+                        <h3 className={`font-semibold text-lg mb-2 ${
+                          selectedStream === stream.id ? 'text-blue-900' : 'text-gray-900'
+                        }`}>{stream.name}</h3>
+                        <p className={`text-sm mb-3 ${
+                          selectedStream === stream.id ? 'text-blue-700' : 'text-gray-600'
+                        }`}>{stream.description}</p>
+                        <div className={`flex items-center text-sm ${
+                          selectedStream === stream.id ? 'text-blue-600' : 'text-gray-500'
+                        }`}>
                           <BookOpen className="w-4 h-4 mr-1" />
                           {stream.subjects.length} subjects
                         </div>
@@ -256,96 +307,143 @@ export default function QuestionClassPage() {
           </div>
         )}
 
-        {/* Available Subjects */}
-        {availableSubjectsList.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center space-x-2">
-              <Star className="w-5 h-5 text-green-500" />
-              <span>Available Now</span>
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {availableSubjectsList.map((subject) => (
-                <Card 
-                  key={subject.id}
-                  className="bg-white border border-gray-200 hover:shadow-xl transition-all duration-300 cursor-pointer group"
-                  onClick={() => handleSubjectClick(subject.id, true)}
-                >
-                  <CardHeader className={`bg-gradient-to-br ${subject.bgColor} border-b border-gray-100`}>
-                    <CardTitle className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className={`p-2 bg-gradient-to-r ${subject.color} rounded-lg text-white`}>
-                          {subject.icon}
-                        </div>
-                        <div>
-                          <span className="text-gray-800 font-semibold">{subject.name}</span>
-                          <Badge className="ml-2 bg-green-100 text-green-800 border-green-200">
-                            Available
-                          </Badge>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <p className="text-gray-600 text-sm mb-4">{subject.description}</p>
-                    <Button 
-                      className={`w-full bg-gradient-to-r ${subject.color} hover:opacity-90 text-white transition-all duration-200`}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleSubjectClick(subject.id, true)
-                      }}
-                    >
-                      Start Questions
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* All Subjects Grid - Unified Layout matching Books page */}
+        {subjects.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {subjects.map((subject) => {
+              const isAvailable = isSubjectAvailable(subject.id)
+              const hasSubSubjects = subject.hasSubSubjects && subject.subSubjects
+              const isExpanded = expandedSubject === subject.id
 
-        {/* Coming Soon Subjects */}
-        {comingSoonSubjects.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center space-x-2">
-              <Clock className="w-5 h-5 text-orange-500" />
-              <span>Coming Soon</span>
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {comingSoonSubjects.map((subject) => (
-                <Card 
-                  key={subject.id}
-                  className="bg-gray-50 border border-gray-200 opacity-75"
-                >
-                  <CardHeader className="bg-gradient-to-br from-gray-50 to-gray-100 border-b border-gray-200">
-                    <CardTitle className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-gray-300 rounded-lg text-gray-600">
-                          {subject.icon}
+              return (
+                <div key={subject.id} className="space-y-4">
+                  <Card
+                    className={`border border-gray-200 transition-all duration-200 ${
+                      hasSubSubjects || isAvailable
+                        ? 'bg-white hover:shadow-lg cursor-pointer group'
+                        : 'bg-gray-50 opacity-75'
+                    }`}
+                    onClick={() => handleSubjectClick(subject, isAvailable || hasSubSubjects)}
+                  >
+                    <CardHeader className={`bg-gradient-to-br ${
+                      hasSubSubjects || isAvailable ? subject.bgColor : 'from-gray-50 to-gray-100'
+                    } border-b border-gray-100`}>
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className={`p-2 rounded-lg ${
+                            hasSubSubjects || isAvailable
+                              ? `bg-gradient-to-r ${subject.color} text-white`
+                              : 'bg-gray-300 text-gray-600'
+                          }`}>
+                            {subject.icon}
+                          </div>
+                          <span className={`font-semibold ${
+                            hasSubSubjects || isAvailable ? 'text-gray-800' : 'text-gray-600'
+                          }`}>
+                            {subject.name}
+                          </span>
                         </div>
-                        <div>
-                          <span className="text-gray-600 font-semibold">{subject.name}</span>
-                          <Badge className="ml-2 bg-orange-100 text-orange-800 border-orange-200">
-                            Coming Soon
-                          </Badge>
-                        </div>
+                        {(hasSubSubjects || isAvailable) && (
+                          <ChevronRight className={`w-5 h-5 text-gray-400 group-hover:text-purple-600 transition-all ${
+                            isExpanded ? 'rotate-90' : ''
+                          }`} />
+                        )}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <p className={`text-sm mb-4 ${
+                        hasSubSubjects || isAvailable ? 'text-gray-600' : 'text-gray-500'
+                      }`}>
+                        {subject.description}
+                      </p>
+
+                      <div className="flex items-center justify-between mb-4">
+                        <Badge className={
+                          hasSubSubjects
+                            ? 'bg-purple-100 text-purple-800 border-purple-200'
+                            : isAvailable
+                            ? 'bg-green-100 text-green-800 border-green-200'
+                            : 'bg-orange-100 text-orange-800 border-orange-200'
+                        }>
+                          {hasSubSubjects ? `${subject.subSubjects?.length} Categories` : isAvailable ? 'Available' : 'Coming Soon'}
+                        </Badge>
                       </div>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <p className="text-gray-500 text-sm mb-4">{subject.description}</p>
-                    <Button 
-                      className="w-full bg-gray-300 text-gray-600 cursor-not-allowed"
-                      disabled
-                    >
-                      Coming Soon
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+
+                      <Button
+                        className={`w-full ${
+                          hasSubSubjects || isAvailable
+                            ? `bg-gradient-to-r ${subject.color} hover:opacity-90 text-white`
+                            : 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                        }`}
+                        disabled={!hasSubSubjects && !isAvailable}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleSubjectClick(subject, isAvailable || hasSubSubjects)
+                        }}
+                      >
+                        {hasSubSubjects ? (isExpanded ? 'Hide Categories' : 'View Categories') : isAvailable ? 'Start Questions' : 'Coming Soon'}
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Sub-subjects (Lab subjects or English variants) */}
+                  {isExpanded && hasSubSubjects && (
+                    <div className="ml-8 grid grid-cols-1 gap-4 animate-in slide-in-from-top-2">
+                      {subject.subSubjects!.map((subSubject) => {
+                        const subAvailable = availableSubjects.includes(subSubject.id)
+                        return (
+                          <Card
+                            key={subSubject.id}
+                            className={`border-l-4 ${
+                              subAvailable
+                                ? `border-l-purple-500 bg-white hover:shadow-lg cursor-pointer group`
+                                : 'border-l-gray-300 bg-gray-50 opacity-75'
+                            }`}
+                            onClick={() => subAvailable && handleSubjectClick(subSubject, true)}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3 flex-1">
+                                  <div className={`p-2 rounded-lg ${
+                                    subAvailable
+                                      ? `bg-gradient-to-r ${subSubject.color} text-white`
+                                      : 'bg-gray-300 text-gray-600'
+                                  }`}>
+                                    {subSubject.icon}
+                                  </div>
+                                  <div className="flex-1">
+                                    <h4 className={`font-semibold ${
+                                      subAvailable ? 'text-gray-800' : 'text-gray-600'
+                                    }`}>
+                                      {subSubject.name}
+                                    </h4>
+                                    <p className="text-xs text-gray-500">{subSubject.description}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Badge className={
+                                    subAvailable
+                                      ? 'bg-green-100 text-green-800 border-green-200'
+                                      : 'bg-orange-100 text-orange-800 border-orange-200'
+                                  }>
+                                    {subAvailable ? 'Available' : 'Coming Soon'}
+                                  </Badge>
+                                  {subAvailable && (
+                                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-purple-600" />
+                                  )}
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
-        )}
+        ) : null}
 
         {/* No Subjects Available */}
         {subjects.length === 0 && (
@@ -371,3 +469,24 @@ export default function QuestionClassPage() {
     </AppLayout>
   )
 } 
+export default function QuestionClassPage() {
+  return (
+    <Suspense fallback={
+      <AppLayout>
+        <div className="p-6 max-w-6xl mx-auto">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 bg-gray-300 rounded w-96"></div>
+            <div className="h-4 bg-gray-300 rounded w-full max-w-2xl"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-48 bg-gray-300 rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </AppLayout>
+    }>
+      <QuestionClassPageContent />
+    </Suspense>
+  )
+}

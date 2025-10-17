@@ -8,6 +8,7 @@ const isPublicRoute = createRouteMatcher([
   '/preview(.*)',
   '/sign-in(.*)',
   '/sign-up(.*)',
+  '/questions(.*)',  // Public access to all questions pages
   '/api/test-db-simple(.*)',
   '/api/test-question-availability(.*)',
   '/api/ping(.*)',
@@ -15,6 +16,7 @@ const isPublicRoute = createRouteMatcher([
   '/api/questions/available-subjects(.*)',  // Public API for checking available subjects
   '/api/questions/unified(.*)',  // Public API for fetching questions
   '/api/questions/stats(.*)',  // Public API for question statistics
+  '/api/questions/:classId/:subjectId(.*)',  // Public API for class/subject questions (e.g., /api/questions/11/mathematics)
   '/api/admin/question-availability(.*)'  // Admin API for diagnostics (temporary)
 ])
 

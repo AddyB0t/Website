@@ -7,13 +7,19 @@ export async function GET(request: Request) {
     const chapterId = searchParams.get('chapter')
     const sectionId = searchParams.get('section')
 
-    // If specific chapter and section requested
+    // If specific chapter and section (exercise) requested
     if (chapterId && sectionId) {
       // First, get all chapters to find the one matching the ID
       const { data: allQuestions, error: allError } = await supabase
         .from('questions')
-        .select('chapter, section')
+        .select(`
+          chapter,
+          exercises!inner(name)
+        `)
         .eq('class_id', '7')
+        .ilike('subject', 'mathematics')
+        .eq('is_active', true)
+        .not('exercise_id', 'is', null)
 
       if (allError) {
         console.error('Error loading questions:', allError)
@@ -22,7 +28,7 @@ export async function GET(request: Request) {
 
       // Find the actual chapter name from the generated ID
       const uniqueChapters = [...new Set(allQuestions.map(q => q.chapter))]
-      const actualChapterName = uniqueChapters.find(chapterName => 
+      const actualChapterName = uniqueChapters.find(chapterName =>
         chapterName.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-') === chapterId
       )
 
@@ -30,27 +36,32 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Chapter not found' }, { status: 404 })
       }
 
-      // Find the actual section name from the generated ID
-      const chapterSections = allQuestions
+      // Find the actual exercise name from the generated ID
+      const chapterExercises = allQuestions
         .filter(q => q.chapter === actualChapterName)
-        .map(q => q.section || 'General')
-      const uniqueSections = [...new Set(chapterSections)]
-      
-      const actualSectionName = uniqueSections.find(sectionName => 
-        sectionName.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-') === sectionId
+        .map(q => q.exercises?.name || 'General')
+      const uniqueExercises = [...new Set(chapterExercises)]
+
+      const actualExerciseName = uniqueExercises.find(exerciseName =>
+        exerciseName.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-') === sectionId
       )
 
-      if (!actualSectionName) {
-        return NextResponse.json({ error: 'Section not found' }, { status: 404 })
+      if (!actualExerciseName) {
+        return NextResponse.json({ error: 'Exercise not found' }, { status: 404 })
       }
 
-      // Get questions for this specific chapter and section
+      // Get questions for this specific chapter and exercise
       const { data: questions, error } = await supabase
         .from('questions')
-        .select('*')
+        .select(`
+          *,
+          exercises!inner(name, exercise_number)
+        `)
         .eq('class_id', '7')
+        .ilike('subject', 'mathematics')
         .eq('chapter', actualChapterName)
-        .eq('section', actualSectionName)
+        .eq('exercises.name', actualExerciseName)
+        .eq('is_active', true)
         .order('order_index')
 
       if (error) {
@@ -60,11 +71,13 @@ export async function GET(request: Request) {
 
       const section = {
         id: sectionId,
-        title: actualSectionName,
+        title: actualExerciseName,
+        exerciseNumber: questions[0]?.exercises?.exercise_number || null,
         questions: questions.map(q => ({
           id: q.id,
           text: q.text,
-          difficulty: q.difficulty || 'medium'
+          difficulty: q.difficulty || 'medium',
+          order_index: q.order_index
         }))
       }
 
@@ -78,6 +91,8 @@ export async function GET(request: Request) {
         .from('questions')
         .select('chapter')
         .eq('class_id', '7')
+        .ilike('subject', 'mathematics')
+        .eq('is_active', true)
 
       if (allError) {
         console.error('Error loading chapters:', allError)
@@ -86,7 +101,7 @@ export async function GET(request: Request) {
 
       // Find the actual chapter name from the generated ID
       const uniqueChapters = [...new Set(allQuestions.map(q => q.chapter))]
-      const actualChapterName = uniqueChapters.find(chapterName => 
+      const actualChapterName = uniqueChapters.find(chapterName =>
         chapterName.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-') === chapterId
       )
 
@@ -94,39 +109,59 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Chapter not found' }, { status: 404 })
       }
 
-      // Get all questions for this chapter using the actual chapter name
+      // Get all questions for this chapter with exercise information
       const { data: questions, error } = await supabase
         .from('questions')
-        .select('*')
+        .select(`
+          *,
+          exercises!inner(name, exercise_number, display_order)
+        `)
         .eq('class_id', '7')
+        .ilike('subject', 'mathematics')
         .eq('chapter', actualChapterName)
-        .order('section, order_index')
+        .eq('is_active', true)
+        .not('exercise_id', 'is', null)
+        .order('exercises(display_order), order_index')
 
       if (error) {
         console.error('Error loading questions:', error)
         return NextResponse.json({ error: 'Failed to load questions' }, { status: 500 })
       }
 
-      // Group questions by section
-      const sectionMap = new Map()
+      // Group questions by exercise
+      const exerciseMap = new Map()
       questions.forEach(q => {
-        const sectionName = q.section || 'General'
-        if (!sectionMap.has(sectionName)) {
-          sectionMap.set(sectionName, [])
+        const exerciseName = q.exercises?.name || 'General'
+        const exerciseNumber = q.exercises?.exercise_number || 0
+        const displayOrder = q.exercises?.display_order || 0
+        const exerciseKey = `${displayOrder}-${exerciseName}`
+
+        if (!exerciseMap.has(exerciseKey)) {
+          exerciseMap.set(exerciseKey, {
+            name: exerciseName,
+            number: exerciseNumber,
+            displayOrder: displayOrder,
+            questions: []
+          })
         }
-        sectionMap.get(sectionName).push({
+
+        exerciseMap.get(exerciseKey).questions.push({
           id: q.id,
           text: q.text,
-          difficulty: q.difficulty || 'medium'
+          difficulty: q.difficulty || 'medium',
+          order_index: q.order_index
         })
       })
 
-      // Convert to sections array
-      const sections = Array.from(sectionMap.entries()).map(([sectionName, questions]) => ({
-        id: sectionName.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-'),
-        title: sectionName,
-        questions
-      }))
+      // Convert to sections array, sorted by display_order
+      const sections = Array.from(exerciseMap.entries())
+        .sort((a, b) => a[1].displayOrder - b[1].displayOrder)
+        .map(([exerciseKey, exerciseData]) => ({
+          id: exerciseData.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-'),
+          title: exerciseData.name,
+          exerciseNumber: exerciseData.number,
+          questions: exerciseData.questions
+        }))
 
       const chapter = {
         id: chapterId,
@@ -139,63 +174,92 @@ export async function GET(request: Request) {
     }
 
     // Return all chapters for Class 7 Mathematics
+    // JOIN with exercises table to get proper exercise names
     const { data: questions, error } = await supabase
       .from('questions')
-      .select('chapter, section, id')
+      .select(`
+        chapter,
+        id,
+        exercise_id,
+        exercises!inner(name, exercise_number, display_order)
+      `)
       .eq('class_id', '7')
+      .ilike('subject', 'mathematics')
+      .eq('is_active', true)
+      .not('exercise_id', 'is', null)
 
     if (error) {
       console.error('Error loading questions:', error)
       return NextResponse.json({ error: 'Failed to load questions' }, { status: 500 })
     }
 
-    // Group by chapter and section
+    // Group by chapter and exercise
     const chapterMap = new Map()
     questions.forEach(q => {
       const chapterName = q.chapter
-      const sectionName = q.section || 'General'
-      
+      const exerciseName = q.exercises?.name || 'General'
+      const exerciseNumber = q.exercises?.exercise_number || 0
+      const displayOrder = q.exercises?.display_order || 0
+
       if (!chapterMap.has(chapterName)) {
         chapterMap.set(chapterName, new Map())
       }
-      
-      const sectionMap = chapterMap.get(chapterName)
-      if (!sectionMap.has(sectionName)) {
-        sectionMap.set(sectionName, 0)
+
+      const exerciseMap = chapterMap.get(chapterName)
+      const exerciseKey = `${displayOrder}-${exerciseName}` // Use display_order for proper sorting
+
+      if (!exerciseMap.has(exerciseKey)) {
+        exerciseMap.set(exerciseKey, {
+          name: exerciseName,
+          number: exerciseNumber,
+          displayOrder: displayOrder,
+          count: 0
+        })
       }
-      
-      sectionMap.set(sectionName, sectionMap.get(sectionName) + 1)
+
+      exerciseMap.get(exerciseKey).count += 1
     })
 
-    // Convert to chapters array with proper question counts
-    const chapters = Array.from(chapterMap.entries()).map(([chapterName, sectionMap]) => {
-      const sections = Array.from(sectionMap.entries()).map((entry) => {
-        const [sectionName, questionCount] = entry as [string, number]
+    // Convert to chapters array with proper exercise information
+    const chapters = Array.from(chapterMap.entries()).map(([chapterName, exerciseMap]) => {
+      // Sort exercises by display_order
+      const sortedExercises = Array.from(exerciseMap.entries())
+        .sort((a, b) => a[1].displayOrder - b[1].displayOrder)
+
+      const sections = sortedExercises.map(([exerciseKey, exerciseData]) => {
         return {
-          id: sectionName.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-'),
-          title: sectionName,
+          id: exerciseData.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-'),
+          title: exerciseData.name,
+          exerciseNumber: exerciseData.number,
           questions: [], // Keep empty for performance
-          questionCount: questionCount // Add the actual count here
+          questionCount: exerciseData.count
         }
       })
-      
-      const totalQuestions = Array.from(sectionMap.values()).reduce((sum, count) => (sum as number) + (count as number), 0)
-      
+
+      const totalQuestions = sortedExercises.reduce((sum, [_, data]) => sum + data.count, 0)
+
+      // Extract chapter number from chapter name (e.g., "Chapter 10: Complex Numbers" -> 10)
+      const chapterNumberMatch = chapterName.match(/Chapter\s+(\d+)/i)
+      const chapterNumber = chapterNumberMatch ? parseInt(chapterNumberMatch[1]) : 9999
+
       return {
         id: chapterName.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-'),
         title: chapterName,
+        chapterNumber,  // Add chapter number for sorting
         sections,
         totalQuestions
       }
     })
+    // Sort chapters by chapter number
+    .sort((a, b) => a.chapterNumber - b.chapterNumber)
 
     return NextResponse.json({ chapters })
 
   } catch (error) {
     console.error('Error loading questions:', error)
     return NextResponse.json(
-      { error: 'Failed to load questions' }, 
+      { error: 'Failed to load questions' },
       { status: 500 }
     )
   }
-} 
+}

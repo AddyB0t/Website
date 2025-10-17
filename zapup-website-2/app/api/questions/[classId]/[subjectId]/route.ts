@@ -11,66 +11,142 @@ export async function GET(
 ) {
   try {
     const awaitedParams = await context.params
-    const { classId, subjectId } = awaitedParams
+    const { classId, subjectId: rawSubjectId } = awaitedParams
     const { searchParams } = new URL(request.url)
     const chapterId = searchParams.get('chapter')
     const sectionId = searchParams.get('section')
 
-    // If specific chapter and section requested
-    if (chapterId && sectionId) {
-      // First, get all chapters to find the one matching the ID
-      const { data: allQuestions, error: allError } = await supabase
-        .from('questions')
-        .select('chapter, section')
-        .eq('class_id', classId)
+    // Map frontend subject IDs to database subject names
+    const subjectNameMap: Record<string, string> = {
+      'accountancy': 'accounts',
+      'business-studies': 'business studies',
+      'environmental-studies': 'environmental studies',
+      'political-science': 'political science'
+    }
 
-      if (allError) {
-        console.error('Error loading questions:', allError)
-        return NextResponse.json({ error: 'Failed to load questions' }, { status: 500 })
+    // Use mapped name if exists, otherwise use the original ID
+    const subjectId = subjectNameMap[rawSubjectId.toLowerCase()] || rawSubjectId
+
+    // If specific chapter and section (exercise) requested
+    if (chapterId && sectionId) {
+      console.log(`📚 Loading chapter: ${chapterId}, section: ${sectionId} for class ${classId}, subject ${subjectId}`)
+
+      // Use new database structure: books -> chapters -> exercises -> questions
+      // Step 1: Get books for this class and subject
+      const { data: books, error: booksError } = await supabase
+        .from('books')
+        .select(`
+          id,
+          subjects!inner(id, name)
+        `)
+        .eq('class_level', classId)
+        .ilike('subjects.name', subjectId)
+
+      console.log(`📚 Found ${books?.length || 0} books for class ${classId}, subject ${subjectId}`)
+
+      if (booksError) {
+        console.error('Error loading books:', booksError)
+        return NextResponse.json({ error: 'Failed to load books' }, { status: 500 })
       }
 
-      // Find the actual chapter name from the generated ID
-      const uniqueChapters = [...new Set(allQuestions.map(q => q.chapter))]
-      const actualChapterName = uniqueChapters.find(chapterName => 
-        chapterName.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-') === chapterId
+      if (!books || books.length === 0) {
+        console.log(`❌ No books found in database for class ${classId}, subject ${subjectId}`)
+        return NextResponse.json({ error: 'No books found for this subject' }, { status: 404 })
+      }
+
+      const bookIds = books.map(b => b.id)
+
+      // Step 2: Get chapters for these books
+      const { data: chapters, error: chaptersError } = await supabase
+        .from('chapters')
+        .select('id, title')
+        .in('book_id', bookIds)
+
+      if (chaptersError) {
+        console.error('Error loading chapters:', chaptersError)
+        return NextResponse.json({ error: 'Failed to load chapters' }, { status: 500 })
+      }
+
+      // Find the chapter that matches the chapterId slug
+      let targetChapter = chapters?.find(ch =>
+        ch.title.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-') === chapterId
       )
 
-      if (!actualChapterName) {
+      // Special handling for Class 9: If only one chapter and many exercises,
+      // the "chapter" might actually be an exercise name
+      let targetExercise = null
+
+      if (!targetChapter && classId === '9' && chapters?.length === 1) {
+        console.log('🔍 Class 9 special case: Looking for exercise matching chapter ID:', chapterId)
+
+        // Get all exercises from the single chapter
+        const { data: allExercises, error: exercisesError } = await supabase
+          .from('exercises')
+          .select('id, name, exercise_number')
+          .eq('chapter_id', chapters[0].id)
+
+        if (!exercisesError && allExercises) {
+          // Try to find an exercise that matches the "chapterId"
+          const matchingExercise = allExercises.find(ex =>
+            ex.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-') === chapterId
+          )
+
+          if (matchingExercise && sectionId === 'questions') {
+            // This is a promoted exercise - treat it as both chapter and exercise
+            console.log('✅ Found promoted exercise:', matchingExercise.name)
+            targetExercise = matchingExercise
+            targetChapter = chapters[0] // Use the actual chapter for context
+          }
+        }
+      }
+
+      if (!targetChapter) {
+        console.error('Chapter not found:', chapterId, 'Available:', chapters?.map(c => c.title))
         return NextResponse.json({ error: 'Chapter not found' }, { status: 404 })
       }
 
-      // Find the actual section name from the generated ID
-      const chapterSections = allQuestions
-        .filter(q => q.chapter === actualChapterName)
-        .map(q => q.section || 'General')
-      const uniqueSections = [...new Set(chapterSections)]
-      
-      const actualSectionName = uniqueSections.find(sectionName => 
-        sectionName.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-') === sectionId
-      )
+      // If we haven't already found the exercise (from Class 9 special case), find it normally
+      if (!targetExercise) {
+        // Step 3: Get exercises for this chapter
+        const { data: exercises, error: exercisesError } = await supabase
+          .from('exercises')
+          .select('id, name, exercise_number')
+          .eq('chapter_id', targetChapter.id)
 
-      if (!actualSectionName) {
-        return NextResponse.json({ error: 'Section not found' }, { status: 404 })
+        if (exercisesError) {
+          console.error('Error loading exercises:', exercisesError)
+          return NextResponse.json({ error: 'Failed to load exercises' }, { status: 500 })
+        }
+
+        // Find the exercise that matches the sectionId slug
+        targetExercise = exercises?.find(ex =>
+          ex.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-') === sectionId
+        )
+
+        if (!targetExercise) {
+          console.error('Exercise not found:', sectionId, 'Available:', exercises?.map(e => e.name))
+          return NextResponse.json({ error: 'Exercise not found' }, { status: 404 })
+        }
       }
 
-      // Get questions for this specific chapter and section
-      const { data: questions, error } = await supabase
+      // Step 4: Get questions for this exercise
+      const { data: questions, error: questionsError } = await supabase
         .from('questions')
         .select('*')
-        .eq('class_id', classId)
-        .eq('chapter', actualChapterName)
-        .eq('section', actualSectionName)
+        .eq('exercise_id', targetExercise.id)
+        .eq('is_active', true)
         .order('order_index')
 
-      if (error) {
-        console.error('Error loading questions:', error)
+      if (questionsError) {
+        console.error('Error loading questions:', questionsError)
         return NextResponse.json({ error: 'Failed to load questions' }, { status: 500 })
       }
 
       const section = {
         id: sectionId,
-        title: actualSectionName,
-        questions: questions.map(q => ({
+        title: targetExercise.name,
+        exerciseNumber: targetExercise.exercise_number,
+        questions: (questions || []).map(q => ({
           id: q.id,
           text: q.text,
           difficulty: q.difficulty || 'medium',
@@ -88,6 +164,8 @@ export async function GET(
         .from('questions')
         .select('chapter')
         .eq('class_id', classId)
+        .ilike('subject', subjectId)
+        .eq('is_active', true)
 
       if (allError) {
         console.error('Error loading chapters:', allError)
@@ -96,7 +174,7 @@ export async function GET(
 
       // Find the actual chapter name from the generated ID
       const uniqueChapters = [...new Set(allQuestions.map(q => q.chapter))]
-      const actualChapterName = uniqueChapters.find(chapterName => 
+      const actualChapterName = uniqueChapters.find(chapterName =>
         chapterName.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-') === chapterId
       )
 
@@ -104,27 +182,43 @@ export async function GET(
         return NextResponse.json({ error: 'Chapter not found' }, { status: 404 })
       }
 
-      // Get all questions for this chapter using the actual chapter name
+      // Get all questions for this chapter with exercise information
       const { data: questions, error } = await supabase
         .from('questions')
-        .select('*')
+        .select(`
+          *,
+          exercises!inner(name, exercise_number, display_order)
+        `)
         .eq('class_id', classId)
+        .ilike('subject', subjectId)
         .eq('chapter', actualChapterName)
-        .order('section, order_index')
+        .eq('is_active', true)
+        .not('exercise_id', 'is', null)
+        .order('exercises(display_order), order_index')
 
       if (error) {
         console.error('Error loading questions:', error)
         return NextResponse.json({ error: 'Failed to load questions' }, { status: 500 })
       }
 
-      // Group questions by section
-      const sectionMap = new Map()
+      // Group questions by exercise
+      const exerciseMap = new Map()
       questions.forEach(q => {
-        const sectionName = q.section || 'General'
-        if (!sectionMap.has(sectionName)) {
-          sectionMap.set(sectionName, [])
+        const exerciseName = q.exercises?.name || 'General'
+        const exerciseNumber = q.exercises?.exercise_number || 0
+        const displayOrder = q.exercises?.display_order || 0
+        const exerciseKey = `${displayOrder}-${exerciseName}`
+
+        if (!exerciseMap.has(exerciseKey)) {
+          exerciseMap.set(exerciseKey, {
+            name: exerciseName,
+            number: exerciseNumber,
+            displayOrder: displayOrder,
+            questions: []
+          })
         }
-        sectionMap.get(sectionName).push({
+
+        exerciseMap.get(exerciseKey).questions.push({
           id: q.id,
           text: q.text,
           difficulty: q.difficulty || 'medium',
@@ -132,12 +226,15 @@ export async function GET(
         })
       })
 
-      // Convert to sections array
-      const sections = Array.from(sectionMap.entries()).map(([sectionName, questions]) => ({
-        id: sectionName.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-'),
-        title: sectionName,
-        questions
-      }))
+      // Convert to sections array, sorted by display_order
+      const sections = Array.from(exerciseMap.entries())
+        .sort((a, b) => a[1].displayOrder - b[1].displayOrder)
+        .map(([exerciseKey, exerciseData]) => ({
+          id: exerciseData.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-'),
+          title: exerciseData.name,
+          exerciseNumber: exerciseData.number,
+          questions: exerciseData.questions
+        }))
 
       const chapter = {
         id: chapterId,
@@ -150,62 +247,195 @@ export async function GET(
     }
 
     // Return all chapters for the given class and subject
-    const { data: questions, error } = await supabase
-      .from('questions')
-      .select('chapter, section, id')
-      .eq('class_id', classId)
+    // Use RPC or get all unique chapters first to avoid 1000 row limit
 
-    if (error) {
-      console.error('Error loading questions:', error)
-      return NextResponse.json({ error: 'Failed to load questions' }, { status: 500 })
+    // Step 1: Get all unique exercise IDs with their info through books → subjects
+    const { data: books, error: booksError } = await supabase
+      .from('books')
+      .select(`
+        id,
+        subjects!inner(id, name)
+      `)
+      .eq('class_level', classId)
+      .ilike('subjects.name', subjectId)
+
+    if (booksError) {
+      console.error('Error loading books:', booksError)
+      return NextResponse.json({ error: 'Failed to load books' }, { status: 500 })
     }
 
-    // Group by chapter and section
-    const chapterMap = new Map()
-    questions.forEach(q => {
-      const chapterName = q.chapter
-      const sectionName = q.section || 'General'
-      
-      if (!chapterMap.has(chapterName)) {
-        chapterMap.set(chapterName, new Map())
+    if (!books || books.length === 0) {
+      return NextResponse.json({ chapters: [] })
+    }
+
+    // Step 2: Get all chapters for these books
+    const bookIds = books.map(b => b.id)
+    const { data: chapters, error: chaptersError } = await supabase
+      .from('chapters')
+      .select('id, title, book_id')
+      .in('book_id', bookIds)
+
+    if (chaptersError) {
+      console.error('Error loading chapters:', chaptersError)
+      return NextResponse.json({ error: 'Failed to load chapters' }, { status: 500 })
+    }
+
+    if (!chapters || chapters.length === 0) {
+      return NextResponse.json({ chapters: [] })
+    }
+
+    // Step 3: Get all exercises for these chapters
+    const chapterIds = chapters.map(c => c.id)
+    const { data: exercises, error: exercisesError } = await supabase
+      .from('exercises')
+      .select('id, name, exercise_number, display_order, chapter_id')
+      .in('chapter_id', chapterIds)
+
+    if (exercisesError) {
+      console.error('Error loading exercises:', exercisesError)
+      return NextResponse.json({ error: 'Failed to load exercises' }, { status: 500 })
+    }
+
+    if (!exercises || exercises.length === 0) {
+      return NextResponse.json({ chapters: [] })
+    }
+
+    // Step 4: Count questions per exercise using aggregate approach
+    // Instead of fetching all rows, query each exercise individually to get count
+    const questionCountsByExercise = new Map()
+
+    // Process exercises in batches to avoid overwhelming the API
+    const batchSize = 50
+    for (let i = 0; i < exercises.length; i += batchSize) {
+      const batch = exercises.slice(i, i + batchSize)
+
+      // Query count for each exercise in parallel
+      const countPromises = batch.map(async (exercise) => {
+        const { count, error } = await supabase
+          .from('questions')
+          .select('*', { count: 'exact', head: true })
+          .eq('exercise_id', exercise.id)
+          .eq('is_active', true)
+
+        if (error) {
+          console.error(`Error counting questions for exercise ${exercise.id}:`, error)
+          return { id: exercise.id, count: 0 }
+        }
+
+        return { id: exercise.id, count: count || 0 }
+      })
+
+      const counts = await Promise.all(countPromises)
+      counts.forEach(({ id, count }) => {
+        questionCountsByExercise.set(id, count)
+      })
+    }
+
+    // Map exercises to chapters
+    const exercisesByChapter = new Map()
+    exercises.forEach(exercise => {
+      if (!exercisesByChapter.has(exercise.chapter_id)) {
+        exercisesByChapter.set(exercise.chapter_id, [])
       }
-      
-      const sectionMap = chapterMap.get(chapterName)
-      if (!sectionMap.has(sectionName)) {
-        sectionMap.set(sectionName, 0)
-      }
-      
-      sectionMap.set(sectionName, sectionMap.get(sectionName) + 1)
+      exercisesByChapter.get(exercise.chapter_id).push(exercise)
     })
 
-    // Convert to chapters array with proper question counts
-    const chapters = Array.from(chapterMap.entries()).map(([chapterName, sectionMap]) => {
-      const sections = Array.from(sectionMap.entries()).map((entry) => {
-        const [sectionName, questionCount] = entry as [string, number]
-        return {
-          id: sectionName.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-'),
-          title: sectionName,
-          questions: [], // Keep empty for performance
-          questionCount: questionCount // Add the actual count here
+    // Map chapter IDs to chapter titles
+    const chapterTitles = new Map()
+    chapters.forEach(chapter => {
+      chapterTitles.set(chapter.id, chapter.title)
+    })
+
+    // Group by unique chapter title (since we have duplicates)
+    const uniqueChapterMap = new Map()
+
+    chapters.forEach(chapter => {
+      const chapterTitle = chapter.title
+
+      if (!uniqueChapterMap.has(chapterTitle)) {
+        uniqueChapterMap.set(chapterTitle, {
+          title: chapterTitle,
+          exercises: []
+        })
+      }
+
+      // Add exercises for this chapter instance
+      const chapterExercises = exercisesByChapter.get(chapter.id) || []
+      uniqueChapterMap.get(chapterTitle).exercises.push(...chapterExercises)
+    })
+
+    // Convert to chapters array with proper exercise information
+    const chaptersArray = Array.from(uniqueChapterMap.entries()).map(([chapterTitle, data]) => {
+      // Sort exercises by display_order and deduplicate by name
+      const uniqueExercises = new Map()
+
+      data.exercises.forEach(exercise => {
+        const key = `${exercise.display_order}-${exercise.name}`
+        if (!uniqueExercises.has(key)) {
+          uniqueExercises.set(key, exercise)
         }
       })
-      
-      const totalQuestions = Array.from(sectionMap.values()).reduce((sum, count) => (sum as number) + (count as number), 0)
-      
+
+      const sortedExercises = Array.from(uniqueExercises.values())
+        .sort((a, b) => a.display_order - b.display_order)
+
+      const sections = sortedExercises.map(exercise => {
+        const questionCount = questionCountsByExercise.get(exercise.id) || 0
+        return {
+          id: exercise.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-'),
+          title: exercise.name,
+          exerciseNumber: exercise.exercise_number,
+          questions: [], // Keep empty for performance
+          questionCount
+        }
+      })
+
+      const totalQuestions = sections.reduce((sum, section) => sum + section.questionCount, 0)
+
+      // Extract chapter number from chapter name (e.g., "Chapter 10: Complex Numbers" -> 10)
+      const chapterNumberMatch = chapterTitle.match(/Chapter\s+(\d+)/i)
+      const chapterNumber = chapterNumberMatch ? parseInt(chapterNumberMatch[1]) : 9999
+
       return {
-        id: chapterName.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-'),
-        title: chapterName,
+        id: chapterTitle.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-'),
+        title: chapterTitle,
+        chapterNumber,  // Add chapter number for sorting
         sections,
         totalQuestions
       }
     })
+    // Sort chapters by chapter number
+    .sort((a, b) => a.chapterNumber - b.chapterNumber)
+    // Filter out chapters with no questions
+    .filter(chapter => chapter.totalQuestions > 0)
 
-    return NextResponse.json({ chapters })
+    // Special handling for Class 9: If there's only 1 chapter with many sections,
+    // promote each section to be its own chapter
+    if (classId === '9' && chaptersArray.length === 1 && chaptersArray[0].sections.length > 10) {
+      const originalChapter = chaptersArray[0]
+      const promotedChapters = originalChapter.sections.map((section, index) => ({
+        id: section.id,
+        title: section.title,
+        chapterNumber: index + 1,
+        sections: [{
+          id: 'questions',
+          title: 'Questions',
+          exerciseNumber: 1,
+          questions: [],
+          questionCount: section.questionCount
+        }],
+        totalQuestions: section.questionCount
+      }))
+
+      return NextResponse.json({ chapters: promotedChapters })
+    }
+
+    return NextResponse.json({ chapters: chaptersArray })
 
   } catch (error) {
     console.error('Error loading questions:', error)
     return NextResponse.json(
-      { error: 'Failed to load questions' }, 
+      { error: 'Failed to load questions' },
       { status: 500 }
     )
   }
