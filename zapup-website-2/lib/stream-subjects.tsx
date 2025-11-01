@@ -125,6 +125,14 @@ const SUBJECT_DEFINITIONS: Record<string, SubjectInfo> = {
     color: 'from-orange-500 to-amber-500',
     bgColor: 'from-orange-50 to-amber-50'
   },
+  bengali: {
+    id: 'bengali',
+    name: 'Bengali',
+    description: 'সাহিত্য, ব্যাকরণ, কবিতা, গদ্য',
+    icon: <BookOpen className="w-6 h-6" />,
+    color: 'from-rose-500 to-pink-500',
+    bgColor: 'from-rose-50 to-pink-50'
+  },
   computer: {
     id: 'computer',
     name: 'Computer',
@@ -262,7 +270,9 @@ export const STREAM_SUBJECTS: Record<string, Record<string, StreamInfo>> = {
         SUBJECT_DEFINITIONS['political-science'],
         SUBJECT_DEFINITIONS.psychology,
         SUBJECT_DEFINITIONS['environmental-studies'],
-        SUBJECT_DEFINITIONS.english
+        SUBJECT_DEFINITIONS.english,
+        SUBJECT_DEFINITIONS.hindi,
+        SUBJECT_DEFINITIONS.bengali
       ]
     }
   },
@@ -305,7 +315,9 @@ export const STREAM_SUBJECTS: Record<string, Record<string, StreamInfo>> = {
         SUBJECT_DEFINITIONS['political-science'],
         SUBJECT_DEFINITIONS.psychology,
         SUBJECT_DEFINITIONS['environmental-studies'],
-        SUBJECT_DEFINITIONS.english
+        SUBJECT_DEFINITIONS.english,
+        SUBJECT_DEFINITIONS.hindi,
+        SUBJECT_DEFINITIONS.bengali
       ]
     }
   }
@@ -332,7 +344,8 @@ export const DEFAULT_SUBJECTS: Record<string, SubjectInfo[]> = {
       bgColor: 'from-blue-50 to-teal-50'
     },
     SUBJECT_DEFINITIONS.english,
-    SUBJECT_DEFINITIONS.hindi
+    SUBJECT_DEFINITIONS.hindi,
+    SUBJECT_DEFINITIONS.bengali
   ],
   '7': [
     SUBJECT_DEFINITIONS.mathematics,
@@ -353,7 +366,8 @@ export const DEFAULT_SUBJECTS: Record<string, SubjectInfo[]> = {
       bgColor: 'from-blue-50 to-teal-50'
     },
     SUBJECT_DEFINITIONS.english,
-    SUBJECT_DEFINITIONS.hindi
+    SUBJECT_DEFINITIONS.hindi,
+    SUBJECT_DEFINITIONS.bengali
   ],
   '8': [
     SUBJECT_DEFINITIONS.mathematics,
@@ -374,7 +388,8 @@ export const DEFAULT_SUBJECTS: Record<string, SubjectInfo[]> = {
       bgColor: 'from-blue-50 to-teal-50'
     },
     SUBJECT_DEFINITIONS.english,
-    SUBJECT_DEFINITIONS.hindi
+    SUBJECT_DEFINITIONS.hindi,
+    SUBJECT_DEFINITIONS.bengali
   ],
   '9': [
     SUBJECT_DEFINITIONS.mathematics,
@@ -387,7 +402,9 @@ export const DEFAULT_SUBJECTS: Record<string, SubjectInfo[]> = {
     SUBJECT_DEFINITIONS['history-civics'],
     SUBJECT_DEFINITIONS['biology-lab'],
     SUBJECT_DEFINITIONS['chemistry-lab'],
-    SUBJECT_DEFINITIONS['physics-lab']
+    SUBJECT_DEFINITIONS['physics-lab'],
+    SUBJECT_DEFINITIONS.hindi,
+    SUBJECT_DEFINITIONS.bengali
   ],
   '10': [
     SUBJECT_DEFINITIONS.mathematics,
@@ -401,7 +418,9 @@ export const DEFAULT_SUBJECTS: Record<string, SubjectInfo[]> = {
     SUBJECT_DEFINITIONS['commercial-studies'],
     SUBJECT_DEFINITIONS['english-shakespeare'],
     SUBJECT_DEFINITIONS.geography,
-    SUBJECT_DEFINITIONS.history
+    SUBJECT_DEFINITIONS.history,
+    SUBJECT_DEFINITIONS.hindi,
+    SUBJECT_DEFINITIONS.bengali
   ]
 }
 

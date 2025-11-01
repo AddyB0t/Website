@@ -357,32 +357,39 @@ function QuestionClassPageContent() {
                         {subject.description}
                       </p>
 
-                      <div className="flex items-center justify-between mb-4">
-                        <Badge className={
-                          hasSubSubjects
-                            ? 'bg-purple-100 text-purple-800 border-purple-200'
-                            : isAvailable
-                            ? 'bg-green-100 text-green-800 border-green-200'
-                            : 'bg-orange-100 text-orange-800 border-orange-200'
-                        }>
-                          {hasSubSubjects ? `${subject.subSubjects?.length} Categories` : isAvailable ? 'Available' : 'Coming Soon'}
-                        </Badge>
-                      </div>
+                      {hasSubSubjects && (
+                        <div className="flex items-center justify-between mb-4">
+                          <Badge className='bg-purple-100 text-purple-800 border-purple-200'>
+                            {subject.subSubjects?.length} Categories
+                          </Badge>
+                        </div>
+                      )}
 
-                      <Button
-                        className={`w-full ${
-                          hasSubSubjects || isAvailable
-                            ? `bg-gradient-to-r ${subject.color} hover:opacity-90 text-white`
-                            : 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                        }`}
-                        disabled={!hasSubSubjects && !isAvailable}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleSubjectClick(subject, isAvailable || hasSubSubjects)
-                        }}
-                      >
-                        {hasSubSubjects ? (isExpanded ? 'Hide Categories' : 'View Categories') : isAvailable ? 'Start Questions' : 'Coming Soon'}
-                      </Button>
+                      {/* View Questions Button */}
+                      {!hasSubSubjects && (
+                        <Button
+                          className={`w-full ${
+                            isAvailable
+                              ? `bg-gradient-to-r ${subject.color} hover:opacity-90 text-white`
+                              : 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                          }`}
+                          disabled={!isAvailable}
+                        >
+                          {isAvailable ? 'View Questions' : 'Coming Soon'}
+                        </Button>
+                      )}
+
+                      {hasSubSubjects && (
+                        <Button
+                          className={`w-full bg-gradient-to-r ${subject.color} hover:opacity-90 text-white`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleSubjectClick(subject, isAvailable || hasSubSubjects)
+                          }}
+                        >
+                          {isExpanded ? 'Hide Categories' : 'View Categories'}
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
 

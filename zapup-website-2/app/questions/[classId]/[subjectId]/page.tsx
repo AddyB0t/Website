@@ -410,19 +410,28 @@ export default function SubjectQuestionsPage() {
                         {chapter.sections.length === 0 ? (
                           <p className="text-gray-500 text-sm px-2 py-1">No sections available</p>
                         ) : (
-                          chapter.sections.map((section) => (
-                            <button
-                              key={section.id}
-                              onClick={() => handleSectionSelect(chapter.id, section.id)}
-                              className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                                selectedSection === section.id
-                                  ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                              }`}
-                            >
-                              {section.title}
-                            </button>
-                          ))
+                          chapter.sections.map((section, sectionIndex) => {
+                            // Generate sequential exercise number in frontend
+                            const displayExerciseNumber = sectionIndex + 1
+                            // Extract the exercise name without the number prefix
+                            // E.g., "Exercise 5 - Programming Questions" -> "Programming Questions"
+                            const exerciseName = section.title.replace(/^Exercise\s+\d+\s*-?\s*/i, '')
+                            const displayTitle = `Exercise ${displayExerciseNumber} - ${exerciseName}`
+
+                            return (
+                              <button
+                                key={section.id}
+                                onClick={() => handleSectionSelect(chapter.id, section.id)}
+                                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                                  selectedSection === section.id
+                                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                }`}
+                              >
+                                {displayTitle}
+                              </button>
+                            )
+                          })
                         )}
                       </div>
                     )}

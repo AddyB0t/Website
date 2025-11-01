@@ -290,4 +290,237 @@ export const userPreferencesService = {
       return true; // Return true so app continues to work with fallback
     }
   }
+};
+
+// Image upload types
+export type UploadedImage = {
+  id: string;
+  user_id: string;
+  image_url: string;
+  storage_path: string;
+  file_name: string;
+  file_size: number;
+  uploaded_at: string;
+  analyzed: boolean;
+  analysis_text?: string;
+  class_level?: string;
+  subject?: string;
+  tags?: string[];
+  created_at: string;
+  updated_at: string;
+};
+
+// Image storage service for student question images
+export const imageStorageService = {
+  // Upload image to Supabase Storage
+  async uploadQuestionImage(
+    userId: string,
+    file: File,
+    metadata?: {
+      analyzed?: boolean;
+      analysis_text?: string;
+      class_level?: string;
+      subject?: string;
+      tags?: string[];
+    }
+  ): Promise<{ success: boolean; data?: UploadedImage; error?: string }> {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return { success: false, error: 'Supabase not configured' };
+    }
+
+    try {
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop();
+      const timestamp = Date.now();
+      const fileName = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      const storagePath = `${userId}/${fileName}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('student-question-images')
+        .upload(storagePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Error uploading to storage:', uploadError);
+        return { success: false, error: uploadError.message };
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('student-question-images')
+        .getPublicUrl(storagePath);
+
+      // Save metadata to database
+      const imageData = {
+        user_id: userId,
+        image_url: urlData.publicUrl,
+        storage_path: storagePath,
+        file_name: file.name,
+        file_size: file.size,
+        analyzed: metadata?.analyzed || false,
+        analysis_text: metadata?.analysis_text,
+        class_level: metadata?.class_level,
+        subject: metadata?.subject,
+        tags: metadata?.tags || []
+      };
+
+      const { data, error: dbError } = await supabase
+        .from('uploaded_question_images')
+        .insert(imageData)
+        .select()
+        .single();
+
+      if (dbError) {
+        console.error('Error saving to database:', dbError);
+        // Try to delete uploaded file if database insert fails
+        await supabase.storage
+          .from('student-question-images')
+          .remove([storagePath]);
+        return { success: false, error: dbError.message };
+      }
+
+      return { success: true, data: data as UploadedImage };
+    } catch (error) {
+      console.error('Unexpected error uploading image:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  },
+
+  // Get all images for a user
+  async getUserImages(
+    userId: string,
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<{ success: boolean; data?: UploadedImage[]; count?: number; error?: string }> {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return { success: false, error: 'Supabase not configured' };
+    }
+
+    try {
+      const { data, error, count } = await supabase
+        .from('uploaded_question_images')
+        .select('*', { count: 'exact' })
+        .eq('user_id', userId)
+        .order('uploaded_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        console.error('Error fetching images:', error);
+        return { success: false, error: error.message };
+      }
+
+      return {
+        success: true,
+        data: data as UploadedImage[],
+        count: count || 0
+      };
+    } catch (error) {
+      console.error('Unexpected error fetching images:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  },
+
+  // Delete an image
+  async deleteImage(
+    userId: string,
+    imageId: string
+  ): Promise<{ success: boolean; error?: string }> {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return { success: false, error: 'Supabase not configured' };
+    }
+
+    try {
+      // First, get the image data to find storage path
+      const { data: imageData, error: fetchError } = await supabase
+        .from('uploaded_question_images')
+        .select('storage_path')
+        .eq('id', imageId)
+        .eq('user_id', userId)
+        .single();
+
+      if (fetchError || !imageData) {
+        console.error('Error fetching image data:', fetchError);
+        return { success: false, error: 'Image not found' };
+      }
+
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from('student-question-images')
+        .remove([imageData.storage_path]);
+
+      if (storageError) {
+        console.error('Error deleting from storage:', storageError);
+        // Continue even if storage delete fails - clean up database
+      }
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from('uploaded_question_images')
+        .delete()
+        .eq('id', imageId)
+        .eq('user_id', userId);
+
+      if (dbError) {
+        console.error('Error deleting from database:', dbError);
+        return { success: false, error: dbError.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Unexpected error deleting image:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  },
+
+  // Update image metadata
+  async updateImageMetadata(
+    userId: string,
+    imageId: string,
+    metadata: {
+      analyzed?: boolean;
+      analysis_text?: string;
+      class_level?: string;
+      subject?: string;
+      tags?: string[];
+    }
+  ): Promise<{ success: boolean; data?: UploadedImage; error?: string }> {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return { success: false, error: 'Supabase not configured' };
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('uploaded_question_images')
+        .update(metadata)
+        .eq('id', imageId)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating image metadata:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data: data as UploadedImage };
+    } catch (error) {
+      console.error('Unexpected error updating metadata:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
 }; 

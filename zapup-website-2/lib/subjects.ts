@@ -20,18 +20,21 @@ export const getSubjectsByClass = (classNum: string, stream?: string): Subject[]
       { id: 'science', name: 'Science' },
       { id: 'social-science', name: 'Social Science' },
       { id: 'english', name: 'English' },
-      { id: 'hindi', name: 'Hindi' }
+      { id: 'hindi', name: 'Hindi' },
+      { id: 'bengali', name: 'Bengali' }
     ],
     '7': [
       { id: 'mathematics', name: 'Mathematics' },
       { id: 'science', name: 'Science' },
       { id: 'social-science', name: 'Social Science' },
       { id: 'english', name: 'English' },
-      { id: 'hindi', name: 'Hindi' }
+      { id: 'hindi', name: 'Hindi' },
+      { id: 'bengali', name: 'Bengali' }
     ],
     '8': [
       { id: 'english', name: 'English' },
       { id: 'hindi', name: 'Hindi' },
+      { id: 'bengali', name: 'Bengali' },
       { id: 'mathematics', name: 'Mathematics' },
       { id: 'science', name: 'Science' },
       { id: 'social-science', name: 'Social Science' }
@@ -39,6 +42,7 @@ export const getSubjectsByClass = (classNum: string, stream?: string): Subject[]
     '9': [
       { id: 'english', name: 'English' },
       { id: 'hindi', name: 'Hindi' },
+      { id: 'bengali', name: 'Bengali' },
       { id: 'mathematics', name: 'Mathematics' },
       { id: 'physics', name: 'Physics' },
       { id: 'chemistry', name: 'Chemistry' },
@@ -51,6 +55,7 @@ export const getSubjectsByClass = (classNum: string, stream?: string): Subject[]
     '10': [
       { id: 'english', name: 'English' },
       { id: 'hindi', name: 'Hindi' },
+      { id: 'bengali', name: 'Bengali' },
       { id: 'mathematics', name: 'Mathematics' },
       { id: 'physics', name: 'Physics' },
       { id: 'chemistry', name: 'Chemistry' },
@@ -91,7 +96,8 @@ export const getSubjectsByClass = (classNum: string, stream?: string): Subject[]
         { id: 'english', name: 'English' },
         { id: 'psychology', name: 'Psychology' }, // Optional
         { id: 'sociology', name: 'Sociology' }, // Optional
-        { id: 'hindi', name: 'Hindi' }
+        { id: 'hindi', name: 'Hindi' },
+        { id: 'bengali', name: 'Bengali' }
       ]
     }
 

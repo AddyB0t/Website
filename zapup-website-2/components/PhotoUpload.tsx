@@ -13,22 +13,29 @@ import { useUserPreferences } from '@/contexts/UserPreferencesContext'
 import { SUBSCRIPTION_FEATURES } from '@/lib/subscriptions'
 
 interface PhotoUploadProps {
-  onImageUploaded: (imageData: string, imageUrl: string) => void
+  onImageUploaded: (imageData: string, imageUrl: string, imageId?: string) => void
   onAnalysisResult: (analysis: string) => void
   isAnalyzing?: boolean
   maxSizeMB?: number
+  classLevel?: string
+  subject?: string
 }
 
-export function PhotoUpload({ 
-  onImageUploaded, 
-  onAnalysisResult, 
+export function PhotoUpload({
+  onImageUploaded,
+  onAnalysisResult,
   isAnalyzing = false,
-  maxSizeMB = 5 
+  maxSizeMB = 5,
+  classLevel,
+  subject
 }: PhotoUploadProps) {
   const { preferences } = useUserPreferences()
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [uploadedImageId, setUploadedImageId] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
 
@@ -57,7 +64,7 @@ export function PhotoUpload({
     )
   }
 
-  const handleFileSelect = (file: File) => {
+  const handleFileSelect = async (file: File) => {
     setUploadError(null)
 
     // Validate file type
@@ -73,16 +80,64 @@ export function PhotoUpload({
       return
     }
 
+    // Store the file for later upload
+    setSelectedFile(file)
+
     // Convert to base64 and preview
     const reader = new FileReader()
     reader.onload = (e) => {
       const imageData = e.target?.result as string
       const imageUrl = URL.createObjectURL(file)
-      
+
       setSelectedImage(imageData)
-      onImageUploaded(imageData, imageUrl)
+
+      // Upload to Supabase in background
+      uploadToSupabase(file, imageData, imageUrl)
     }
     reader.readAsDataURL(file)
+  }
+
+  const uploadToSupabase = async (file: File, imageData: string, imageUrl: string) => {
+    setIsUploading(true)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('analyzed', 'false')
+      if (classLevel) formData.append('class_level', classLevel)
+      if (subject) formData.append('subject', subject)
+
+      const response = await fetch('/api/upload-question-image', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('Upload failed:', response.status, errorData)
+        throw new Error(errorData.error || 'Failed to upload image')
+      }
+
+      const data = await response.json()
+
+      if (data.success && data.image) {
+        setUploadedImageId(data.image.id)
+        console.log('✅ Image uploaded to Supabase:', data.image.id)
+
+        // Call the callback with image ID
+        onImageUploaded(imageData, imageUrl, data.image.id)
+      } else {
+        console.error('Upload response missing image data:', data)
+        throw new Error('Upload response invalid')
+      }
+    } catch (error) {
+      console.error('Error uploading to Supabase:', error)
+      setUploadError(error instanceof Error ? error.message : 'Failed to upload image')
+      // Still allow local preview even if upload fails
+      onImageUploaded(imageData, imageUrl)
+    } finally {
+      setIsUploading(false)
+    }
   }
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,6 +169,8 @@ export function PhotoUpload({
 
   const clearImage = () => {
     setSelectedImage(null)
+    setSelectedFile(null)
+    setUploadedImageId(null)
     setUploadError(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
     if (cameraInputRef.current) cameraInputRef.current.value = ''
@@ -159,10 +216,10 @@ export function PhotoUpload({
 
       {/* Upload Area */}
       {!selectedImage ? (
-        <Card 
+        <Card
           className={`border-2 border-dashed transition-all duration-200 ${
-            dragOver 
-              ? 'border-blue-400 bg-blue-50' 
+            dragOver
+              ? 'border-blue-400 bg-blue-50'
               : 'border-gray-300 hover:border-blue-400'
           }`}
           onDrop={handleDrop}
@@ -170,13 +227,27 @@ export function PhotoUpload({
           onDragLeave={handleDragLeave}
         >
           <CardContent className="p-8 text-center bg-gray-50 rounded-lg">
-            <ImageIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Upload Question Image
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Take a photo or upload an image of your question
-            </p>
+            {isUploading ? (
+              <>
+                <Loader2 className="w-16 h-16 text-blue-600 mx-auto mb-4 animate-spin" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Uploading...
+                </h3>
+                <p className="text-gray-600">
+                  Saving your image to My Images
+                </p>
+              </>
+            ) : (
+              <>
+                <ImageIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Upload Question Image
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Take a photo or upload an image of your question
+                </p>
+              </>
+            )}
             
             <div className="flex justify-center space-x-4">
               {/* Camera Button */}

@@ -45,8 +45,9 @@ export function ClassroomLayout({
 
       {/* Subject Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-        {subjects.map((subject) => (
-          <Card key={subject.id} className="group hover:shadow-xl transition-all duration-300 border border-gray-200 shadow-lg overflow-hidden bg-white">
+        {subjects.map((subject) => {
+          const cardContent = (
+            <Card key={subject.id} className={`group transition-all duration-300 border border-gray-200 shadow-lg overflow-hidden bg-white ${subject.available !== false ? 'hover:shadow-xl cursor-pointer' : 'opacity-75'}`}>
             {/* Card Header */}
             <CardHeader className="bg-white border-b border-gray-100 p-6">
               <div className="flex items-center justify-between">
@@ -99,31 +100,19 @@ export function ClassroomLayout({
                 </div>
               )}
 
-              {/* Action Button */}
-              <div className="flex justify-end">
-                {subject.available === false ? (
-                  <Button 
-                    variant="outline"
-                    disabled={true}
-                    className="border-gray-200 text-gray-400 cursor-not-allowed bg-white"
-                  >
-                    <span>Coming Soon</span>
-                  </Button>
-                ) : (
-                  <Button 
-                    asChild
-                    className="bg-blue-600 hover:bg-blue-700 text-white border-0 shadow-md hover:shadow-lg group/btn transition-all duration-200"
-                  >
-                    <Link href={classId ? `/questions/${classId}/${subject.id}` : `/questions/${subject.id}`} className="flex items-center">
-                      <span>Explore</span>
-                      <ChevronRight className="w-4 h-4 ml-1 group-hover/btn:translate-x-1 transition-transform" />
-                    </Link>
-                  </Button>
-                )}
-              </div>
             </CardContent>
-          </Card>
-        ))}
+            </Card>
+          )
+
+          // Wrap with Link if available, otherwise just return the card
+          return subject.available !== false ? (
+            <Link key={subject.id} href={classId ? `/questions/${classId}/${subject.id}` : `/questions/${subject.id}`}>
+              {cardContent}
+            </Link>
+          ) : (
+            cardContent
+          )
+        })}
       </div>
 
       {/* Additional Sections */}

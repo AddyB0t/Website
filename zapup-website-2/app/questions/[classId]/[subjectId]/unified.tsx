@@ -231,7 +231,11 @@ export default function UnifiedSubjectQuestionsPage() {
                   Available Questions ({questions.length})
                 </h2>
                 
-                {Object.entries(questionsByChapter).map(([chapterKey, chapter]) => (
+                {Object.entries(questionsByChapter).map(([chapterKey, chapter]) => {
+                  // Calculate cumulative question number for this chapter
+                  let cumulativeQuestionNumber = 0
+
+                  return (
                   <Card key={chapterKey} className="overflow-hidden">
                     <CardHeader className="bg-blue-50 border-b">
                       <CardTitle className="text-sm font-medium text-blue-900">
@@ -244,7 +248,9 @@ export default function UnifiedSubjectQuestionsPage() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                      {chapter.questions.map((question, idx) => (
+                      {chapter.questions.map((question, idx) => {
+                        cumulativeQuestionNumber++
+                        return (
                         <div
                           key={question.id}
                           onClick={() => handleQuestionSelect(question)}
@@ -257,7 +263,7 @@ export default function UnifiedSubjectQuestionsPage() {
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center space-x-2">
                               <Badge variant="outline" className="text-xs">
-                                Q{question.question_number || idx + 1}
+                                Q{cumulativeQuestionNumber}
                               </Badge>
                               <Badge className={getDifficultyColor(question.difficulty_level)}>
                                 {question.difficulty_level}
@@ -283,10 +289,12 @@ export default function UnifiedSubjectQuestionsPage() {
                             </p>
                           )}
                         </div>
-                      ))}
+                      )
+                      })}
                     </CardContent>
                   </Card>
-                ))}
+                  )
+                })}
               </div>
 
               {/* Selected Question & AI Help */}

@@ -1,11 +1,12 @@
-// zapup-website-2/app/api/analyze-image/route.ts
-// API endpoint to analyze question images using AI
-// Only available for Achiever and Genius+ plan users
-
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { supabase } from '@/lib/supabase'
 import { SUBSCRIPTION_FEATURES, SubscriptionType } from '@/lib/subscriptions'
+
+interface Message {
+  role: 'user' | 'assistant'
+  content: string
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,29 +19,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user subscription type
-    const { data: userPreferences, error: userError } = await supabase
+    const { data: userPreferences } = await supabase
       .from('user_preferences')
       .select('subscription_type')
       .eq('user_id', userId)
       .single()
 
-    if (userError) {
-      return NextResponse.json(
-        { error: 'Could not fetch user preferences' },
-        { status: 500 }
-      )
-    }
-
     const subscriptionType = (userPreferences?.subscription_type || 'explorer') as SubscriptionType
     const features = SUBSCRIPTION_FEATURES[subscriptionType]
 
-    // Check if user has image upload access
-    if (!features.imageUpload) {
+    // Check if user has chatbot access
+    if (!features.chatbot) {
       return NextResponse.json(
-        { 
-          error: 'Image upload is only available for Achiever and Genius+ plan users',
-          upgrade_required: true,
-          current_plan: subscriptionType
+        {
+          error: 'Chatbot is only available for Achiever and Genius+ plan users',
+          upgrade_required: true
         },
         { status: 403 }
       )
@@ -57,20 +50,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { image, type = 'question-analysis' } = body
+    const { message, imageUrl, previousMessages = [] } = body
 
     // Validate inputs
-    if (!image || typeof image !== 'string') {
+    if (!message || typeof message !== 'string') {
       return NextResponse.json(
-        { error: 'Image data is required and must be a string' },
+        { error: 'Message is required and must be a string' },
         { status: 400 }
       )
     }
 
-    // Validate type
-    if (type !== 'question-analysis') {
+    if (!imageUrl || typeof imageUrl !== 'string') {
       return NextResponse.json(
-        { error: 'Invalid analysis type' },
+        { error: 'Image URL is required and must be a string' },
+        { status: 400 }
+      )
+    }
+
+    // Validate message length to prevent abuse
+    if (message.length > 1000) {
+      return NextResponse.json(
+        { error: 'Message is too long. Maximum 1000 characters allowed.' },
+        { status: 400 }
+      )
+    }
+
+    // Validate and limit previous messages
+    if (!Array.isArray(previousMessages)) {
+      return NextResponse.json(
+        { error: 'Previous messages must be an array' },
         { status: 400 }
       )
     }
@@ -84,31 +92,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Prepare the prompt based on analysis type
-    let systemPrompt = ''
-    let userPrompt = ''
+    // Limit previous messages to last 10 to prevent payload bloat
+    const limitedPreviousMessages = previousMessages.slice(-10)
 
-    if (type === 'question-analysis') {
-      systemPrompt = `You are an expert educational assistant specializing in analyzing academic questions from images. Your task is to:
-
-1. Extract and clearly state the question text from the image
-2. Identify the subject area (Math, Science, English, etc.)
-3. Determine the difficulty level and grade level
-4. Provide a step-by-step solution approach
-5. Give hints to help the student understand the concept
-
-Format your response clearly with sections for easy reading.`
-
-      userPrompt = `Please analyze this academic question image and provide:
-
-1. **Question Text**: What is the exact question being asked?
-2. **Subject & Topic**: What subject and specific topic does this cover?
-3. **Solution Approach**: How would you solve this step-by-step?
-4. **Key Concepts**: What concepts should the student understand?
-5. **Hints**: What hints can help the student solve this themselves?
-
-Please be educational and encouraging in your response.`
-    }
+    // Prepare messages for AI
+    const messages = [
+      {
+        role: 'system',
+        content: 'You are a helpful educational assistant helping students understand and solve their academic questions from images. Be encouraging, clear, and educational. Help them learn rather than just giving answers.'
+      },
+      ...limitedPreviousMessages.map((msg: Message) => ({
+        role: msg.role,
+        content: msg.content
+      })),
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: message
+          },
+          {
+            type: 'image_url',
+            image_url: {
+              url: imageUrl
+            }
+          }
+        ]
+      }
+    ]
 
     // Call OpenRouter API with vision model and timeout
     const controller = new AbortController()
@@ -121,40 +133,20 @@ Please be educational and encouraging in your response.`
         headers: {
           'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
           'Content-Type': 'application/json',
-          'X-Title': 'ZapUp Image Question Analyzer',
+          'X-Title': 'ZapUp Study Helper',
         },
         body: JSON.stringify({
-          model: 'anthropic/claude-3.5-sonnet', // Vision-capable model
-          messages: [
-            {
-              role: 'system',
-              content: systemPrompt
-            },
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: userPrompt
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: image
-                  }
-                }
-              ]
-            }
-          ],
-          max_tokens: 1500,
-          temperature: 0.3, // Lower temperature for more consistent educational responses
+          model: 'anthropic/claude-3.5-sonnet',
+          messages: messages,
+          max_tokens: 1000,
+          temperature: 0.7,
         }),
         signal: controller.signal
       })
     } catch (fetchError) {
       clearTimeout(timeoutId)
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        throw new Error('Analysis request timed out. Please try again.')
+        throw new Error('AI request timed out. Please try again.')
       }
       throw new Error('Failed to connect to AI service. Please try again.')
     }
@@ -190,42 +182,25 @@ Please be educational and encouraging in your response.`
       throw new Error('Received incomplete response from AI service')
     }
 
-    const analysis = openRouterData.choices[0].message.content
+    const response = openRouterData.choices[0].message.content
 
-    if (!analysis || typeof analysis !== 'string') {
-      throw new Error('AI did not generate a valid analysis')
-    }
-
-    // Log the image analysis for analytics (optional)
-    try {
-      await supabase
-        .from('image_analyses')
-        .insert({
-          user_id: userId,
-          analysis_type: type,
-          subscription_type: subscriptionType,
-          created_at: new Date().toISOString()
-        })
-    } catch (logError) {
-      console.error('Error logging image analysis:', logError)
-      // Don't fail the request if logging fails
+    if (!response || typeof response !== 'string') {
+      throw new Error('AI did not generate a valid response')
     }
 
     return NextResponse.json({
       success: true,
-      analysis: analysis,
-      type: type,
-      subscription_type: subscriptionType
+      response: response
     })
 
   } catch (error) {
-    console.error('Image analysis error:', error)
+    console.error('Image chat error:', error)
     return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Failed to analyze image',
+      {
+        error: error instanceof Error ? error.message : 'Failed to process your request',
         details: 'Please try again or contact support if the problem persists'
       },
       { status: 500 }
     )
   }
-} 
+}

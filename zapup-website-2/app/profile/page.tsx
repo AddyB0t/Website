@@ -29,6 +29,7 @@ import {
 import { useUserPreferences } from '@/contexts/UserPreferencesContext'
 import { getStateNames, getSchoolsByState, getSchoolsByStateAndBoard } from '@/lib/states-schools-data'
 import { getSubjectsByClass } from '@/lib/subjects'
+import { getSubjectsForClass } from '@/lib/stream-subjects'
 import { canAccessClass } from '@/lib/access-control'
 import Head from 'next/head'
 import Link from 'next/link'
@@ -46,6 +47,7 @@ export default function ProfilePage() {
   const [schoolSearchQuery, setSchoolSearchQuery] = useState('')
   const [showSchoolSuggestions, setShowSchoolSuggestions] = useState(false)
   const [filteredSchools, setFilteredSchools] = useState<Array<{name: string, city: string, board: string}>>([])
+  const [availableSubjects, setAvailableSubjects] = useState<string[]>([])
 
   const schoolBoards = [
     { value: 'CBSE', label: 'CBSE (Central Board of Secondary Education)' },
@@ -85,14 +87,57 @@ export default function ProfilePage() {
     }
   }, [preferences, isLoading])
 
-  // Get subject icon
+  // Fetch available subjects when class or board changes
+  useEffect(() => {
+    const fetchAvailableSubjects = async () => {
+      if (!preferences.currentClass || !preferences.schoolBoard) return
+
+      try {
+        // Use ICSE for Class 9-12, board preference for others
+        let boardType = preferences.schoolBoard
+        const classNum = preferences.currentClass
+        if (classNum === '9' || classNum === '10' || classNum === '11' || classNum === '12') {
+          boardType = 'ICSE (Indian Certificate of Secondary Education)'
+        }
+
+        const params = new URLSearchParams({
+          class: preferences.currentClass,
+          board: boardType
+        })
+
+        const response = await fetch(`/api/questions/available-subjects?${params}`)
+
+        if (response.ok) {
+          const data = await response.json()
+          const availableSubjectIds = data.availableSubjects?.map((s: any) => s.subject) || []
+          console.log('Available subjects from API (Profile):', availableSubjectIds)
+          setAvailableSubjects(availableSubjectIds)
+        }
+      } catch (error) {
+        console.error('Error fetching available subjects:', error)
+      }
+    }
+
+    fetchAvailableSubjects()
+  }, [preferences.currentClass, preferences.schoolBoard])
+
+  // Get subject icon - returns React node from stream-subjects or default icon
   const getSubjectIcon = (subjectId: string) => {
+    // Try to get icon from stream-subjects first (for consistency with questions page)
+    const streamSubjects = getSubjectsForClass(preferences.currentClass, preferences.stream)
+    const streamSubject = streamSubjects.find(s => s.id === subjectId)
+    if (streamSubject && streamSubject.icon) {
+      return streamSubject.icon
+    }
+
+    // Fallback icon map
     const iconMap: { [key: string]: React.ReactNode } = {
       'mathematics': <Calculator className="w-6 h-6" />,
       'science': <Atom className="w-6 h-6" />,
       'social-science': <Globe className="w-6 h-6" />,
       'english': <Languages className="w-6 h-6" />,
       'hindi': <Languages className="w-6 h-6" />,
+      'bengali': <BookOpen className="w-6 h-6" />,
       'physics': <Atom className="w-6 h-6" />,
       'chemistry': <Atom className="w-6 h-6" />,
       'biology': <Atom className="w-6 h-6" />,
@@ -113,12 +158,21 @@ export default function ProfilePage() {
 
   // Get subject description
   const getSubjectDescription = (subjectId: string, classNum: string) => {
+    // Try to get description from stream-subjects first
+    const streamSubjects = getSubjectsForClass(preferences.currentClass, preferences.stream?.toLowerCase())
+    const streamSubject = streamSubjects.find(s => s.id === subjectId)
+    if (streamSubject && streamSubject.description) {
+      return streamSubject.description
+    }
+
+    // Fallback descriptions
     const descriptions: { [key: string]: string } = {
       'mathematics': `Numbers, algebra, geometry, and more with interactive lessons tailored for Class ${classNum} students.`,
       'science': `Introduction to physics, chemistry, and biology concepts suitable for Class ${classNum} curriculum.`,
       'social-science': `History, geography, and civics topics from the Class ${classNum} syllabus.`,
       'english': `Reading, writing, and communication skills through Class ${classNum} literature and language exercises.`,
       'hindi': `Develop Hindi language skills through stories and activities designed for Class ${classNum}.`,
+      'bengali': `Learn Bengali language, literature, and cultural heritage through engaging content for Class ${classNum}.`,
       'physics': `Mechanics, thermodynamics, and wave motion with comprehensive theory and numerical problems.`,
       'chemistry': `Organic, inorganic, and physical chemistry with detailed molecular structures and reactions.`,
       'biology': `Cell biology, plant physiology, and human anatomy with detailed diagrams and explanations.`,
@@ -228,18 +282,55 @@ export default function ProfilePage() {
 
   // Check if profile is complete
   const isProfileComplete = preferences.currentClass && preferences.schoolBoard
-  
-  // Get subjects for the user's class
-  const userSubjects = isProfileComplete ? getSubjectsByClass(preferences.currentClass, preferences.stream) : []
-  
+
+  // Subject name alias mapping (database name → subject ID)
+  const subjectAliases: Record<string, string[]> = {
+    'accountancy': ['accounts', 'accountancy'],
+    'business-studies': ['business-studies', 'business studies'],
+    'environmental-studies': ['environmental-studies', 'environmental studies'],
+    'political-science': ['political-science', 'political science'],
+    'english-shakespeare': ['english-shakespeare', 'english - shakespeare'],
+    'english-poetry': ['english-poetry', 'english - poetry'],
+    'history-civics': ['history-civics', 'history & civics'],
+    'commercial-studies': ['commercial-studies', 'commercial studies'],
+    'computer': ['computer', 'computer science'],
+    'biology-lab': ['biology-lab', 'biology lab'],
+    'chemistry-lab': ['chemistry-lab', 'chemistry lab'],
+    'physics-lab': ['physics-lab', 'physics lab']
+  }
+
+  // Helper function to check if a subject is available
+  const isSubjectAvailable = (subjectId: string): boolean => {
+    const normalizedAvailableSubjects = availableSubjects.map(s => s.toLowerCase().replace(/\s+/g, '-'))
+    const normalizedId = subjectId.toLowerCase().replace(/\s+/g, '-')
+
+    // Check if subject ID matches directly
+    if (normalizedAvailableSubjects.includes(normalizedId)) {
+      return true
+    }
+
+    // Check aliases
+    const aliases = subjectAliases[normalizedId]
+    if (aliases) {
+      return aliases.some(alias =>
+        normalizedAvailableSubjects.includes(alias.toLowerCase().replace(/\s+/g, '-'))
+      )
+    }
+
+    return false
+  }
+
+  // Get subjects for the user's class - use stream-subjects for consistency with questions page
+  const userSubjects = isProfileComplete ? getSubjectsForClass(preferences.currentClass, preferences.stream?.toLowerCase()) : []
+
   const subjects = userSubjects.map(subject => ({
     id: subject.id,
     name: subject.name,
-    icon: getSubjectIcon(subject.id),
-    description: getSubjectDescription(subject.id, preferences.currentClass),
-    color: 'from-blue-500 to-purple-500',
-    bgColor: 'from-blue-50 to-purple-50',
-    available: subject.id === 'mathematics' || subject.id === 'science' || subject.id === 'social-science' || subject.id === 'english',
+    icon: subject.icon || getSubjectIcon(subject.id),
+    description: subject.description || getSubjectDescription(subject.id, preferences.currentClass),
+    color: subject.color || 'from-blue-500 to-purple-500',
+    bgColor: subject.bgColor || 'from-blue-50 to-purple-50',
+    available: isSubjectAvailable(subject.id),
     topics: Math.floor(Math.random() * 20) + 10 // Random number of topics for demo
   }))
 
@@ -250,10 +341,12 @@ export default function ProfilePage() {
         description: "Complete your profile to get personalized learning content and access to your classroom."
       }
     }
-    
+
     const className = preferences.currentClass
-    const stream = preferences.stream ? ` (${preferences.stream})` : ''
-    
+    // Only show stream for classes 11 and 12
+    const isHigherSecondary = preferences.currentClass === '11' || preferences.currentClass === '12'
+    const stream = (isHigherSecondary && preferences.stream) ? ` (${preferences.stream})` : ''
+
     return {
       title: `Welcome to Your Class ${className} Classroom!${stream}`,
       description: `Explore your subjects below. Each card leads to lessons, practice exercises, and resources aligned with your Class ${className} curriculum.`

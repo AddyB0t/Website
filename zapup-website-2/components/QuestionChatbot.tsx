@@ -126,6 +126,29 @@ I can help you with:
     const messageToSend = messageText || inputValue.trim()
     if (!messageToSend || isLoading) return
 
+    // Check if user is asking about circuit diagrams, figures, or images
+    const needsImageKeywords = [
+      'circuit', 'diagram', 'figure', 'image', 'draw', 'picture', 'photo',
+      'sketch', 'graph', 'chart', 'pattern', 'structure', 'visual'
+    ]
+
+    const messageLower = messageToSend.toLowerCase()
+    const needsImage = needsImageKeywords.some(keyword => messageLower.includes(keyword))
+
+    // If user mentions circuit/figure/image, prompt them to upload
+    if (needsImage && canUploadImages && !isAnalyzingImage) {
+      const promptMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: '📸 It looks like you\'re asking about a visual element! I can help you better if you upload a picture of the circuit diagram, figure, or image you\'re referring to.\n\nWould you like to upload a photo?',
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev, promptMessage])
+      setShowPhotoUpload(true)
+      setInputValue('')
+      return
+    }
+
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -218,15 +241,28 @@ I can help you with:
     }
   }
 
-  const handleImageUploaded = (imageData: string, imageUrl: string) => {
+  const handleImageUploaded = (imageData: string, imageUrl: string, imageId?: string) => {
     // Add image message to chat
     const imageMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: `📷 Uploaded question image`,
+      content: `📷 Uploaded question image${imageId ? ' (Saved to My Images)' : ''}`,
       timestamp: new Date()
     }
     setMessages(prev => [...prev, imageMessage])
+
+    // Show success notification if image was saved
+    if (imageId) {
+      const successMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: `✅ Your image has been saved to My Images! You can access it anytime from the sidebar.`,
+        timestamp: new Date()
+      }
+      setTimeout(() => {
+        setMessages(prev => [...prev, successMessage])
+      }, 500)
+    }
   }
 
   const handleImageAnalysis = async (analysis: string) => {

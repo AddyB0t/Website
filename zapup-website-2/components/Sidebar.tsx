@@ -1,6 +1,6 @@
 // zapup-website-2/components/Sidebar.tsx
 // Main navigation sidebar with class-wise organization
-// Shows Profile, Quizzes, Books, Videos with expandable class sections
+// Shows Profile, Questions, My Images with expandable class sections
 
 'use client'
 
@@ -19,7 +19,8 @@ import {
   Settings,
   LogOut,
   AlertCircle,
-  CreditCard
+  CreditCard,
+  Image as ImageIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SignOutButton } from './SignOutButton'
@@ -55,12 +56,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       }
     ]
 
-    // Only show Questions and Books if profile is complete
+    // Only show Questions and My Images if profile is complete
     if (isProfileComplete()) {
       const userClass = preferences.currentClass
       const userStream = preferences.stream
       const subjects = getSubjectsByClass(userClass, userStream)
-      
+
       sections.push(
         {
           id: 'questions',
@@ -69,10 +70,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           subjects: subjects
         },
         {
-          id: 'books',
-          title: 'Books',
-          icon: <BookOpen className="w-5 h-5" />,
-          subjects: subjects
+          id: 'my-images',
+          title: 'My Images',
+          icon: <ImageIcon className="w-5 h-5" />
         }
       )
     }
@@ -101,6 +101,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       'biology': <span className="text-sm">🧬</span>,
       'english': <span className="text-sm">📚</span>,
       'hindi': <span className="text-sm">📖</span>,
+      'bengali': <span className="text-sm">📕</span>,
       'history': <span className="text-sm">🏛️</span>,
       'geography': <span className="text-sm">🌍</span>,
       'economics': <span className="text-sm">💰</span>,

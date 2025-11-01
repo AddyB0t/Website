@@ -44,7 +44,7 @@ const defaultPreferences: UserPreferences = {
   email: '',
   profilePictureUrl: '',
   isComplete: false,
-  subscriptionType: "explorer",
+  subscriptionType: "genius_plus",
 }
 
 export const UserPreferencesContext = React.createContext<UserPreferencesContextType | undefined>(undefined);
@@ -85,7 +85,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
           email: user.primaryEmailAddress?.emailAddress || '',
           profilePictureUrl: user.imageUrl || '',
           isComplete: false,
-          subscriptionType: 'explorer' as SubscriptionType,
+          subscriptionType: 'genius_plus' as SubscriptionType,
         };
         setPreferences(initialPreferences)
         
@@ -170,7 +170,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
           lastName: user.lastName || '',
           email: user.primaryEmailAddress?.emailAddress || '',
           profilePictureUrl: user.imageUrl || '',
-          subscriptionType: 'explorer' as SubscriptionType,
+          subscriptionType: 'genius_plus' as SubscriptionType,
         };
         setPreferences(clearedPreferences)
       }
