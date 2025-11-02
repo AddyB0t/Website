@@ -4,19 +4,20 @@ import { useState } from 'react'
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from 'next/navigation'
+import { useUser } from '@clerk/nextjs'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CopyrightYear } from "../components/CopyrightYear"
 import { MobileMenuButton } from "../components/MobileMenuButton"
 import { ClassSelectionModal } from "../components/ClassSelectionModal"
-import { 
-  BookOpen, 
-  Users, 
-  Award, 
-  Target, 
-  CheckCircle, 
-  Star, 
+import {
+  BookOpen,
+  Users,
+  Award,
+  Target,
+  CheckCircle,
+  Star,
   TrendingUp,
   Brain,
   Lightbulb,
@@ -28,11 +29,13 @@ import {
   GraduationCap,
   Trophy,
   Clock,
-  Globe
+  Globe,
+  User
 } from 'lucide-react'
 
 export default function Home() {
   const router = useRouter()
+  const { isSignedIn, user } = useUser()
   const [showClassSelection, setShowClassSelection] = useState(false)
 
   const handleClassSelect = (classId: string) => {
@@ -177,16 +180,33 @@ export default function Home() {
             Pricing
           </Link>
           <div className="flex items-center space-x-3">
-            <Link href="/sign-in">
-              <Button variant="ghost" className="text-blue-600 hover:bg-blue-50 font-medium">
-                Sign In
+            {isSignedIn ? (
+              <Button
+                variant="ghost"
+                className="flex items-center space-x-2 px-3 py-2 h-auto rounded-lg hover:bg-blue-50 transition-all duration-200"
+                onClick={() => router.push('/profile')}
+              >
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-blue-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-900">
+                  {user?.firstName || 'Student'}
+                </span>
               </Button>
-            </Link>
-            <Link href="/sign-up">
-              <Button className="bg-blue-600 hover:bg-blue-700 font-medium">
-                Sign Up Free
-              </Button>
-            </Link>
+            ) : (
+              <>
+                <Link href="/sign-in">
+                  <Button variant="ghost" className="text-blue-600 hover:bg-blue-50 font-medium">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/sign-up">
+                  <Button className="bg-blue-600 hover:bg-blue-700 font-medium">
+                    Sign Up Free
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </nav>
         <MobileMenuButton />

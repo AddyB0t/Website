@@ -54,18 +54,20 @@ export default function MyImagesPage() {
     } else if (image.analysis_text) {
       setImageAnalysis(image.analysis_text)
     }
-  }, [analysisAttempted])
+  }, [analysisAttempted, analyzeSelectedImage])
 
   const getSizeClasses = () => {
+    // On mobile, use viewport-based height to prevent overflow
+    // On desktop, use size controls
     switch (helperSize) {
       case 'small':
-        return 'w-96 h-[32rem]'
+        return 'w-full sm:w-80 md:w-96 max-h-[calc(100vh-1rem)] sm:h-[32rem]'
       case 'medium':
-        return 'w-[32rem] h-[42rem]'
+        return 'w-full sm:w-96 md:w-[32rem] max-h-[calc(100vh-1rem)] sm:h-[42rem]'
       case 'large':
-        return 'w-[36rem] h-[48rem]'
+        return 'w-full sm:w-[28rem] md:w-[36rem] max-h-[calc(100vh-1rem)] sm:h-[48rem]'
       default:
-        return 'w-[32rem] h-[42rem]'
+        return 'w-full sm:w-96 md:w-[32rem] max-h-[calc(100vh-1rem)] sm:h-[42rem]'
     }
   }
 
@@ -249,31 +251,32 @@ export default function MyImagesPage() {
     <AppLayout>
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="bg-white border-b border-gray-200 px-3 sm:px-6 py-3 sm:py-4">
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 flex items-center space-x-3">
-                  <div className="p-2 bg-purple-50 rounded-lg">
-                    <ImageIcon className="w-6 h-6 text-purple-600" />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+              <div className="flex-1">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center space-x-2 sm:space-x-3">
+                  <div className="p-1.5 sm:p-2 bg-purple-50 rounded-lg">
+                    <ImageIcon className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                   </div>
                   <span>My Images</span>
                 </h1>
-                <p className="text-gray-600 mt-1 text-sm">
+                <p className="text-gray-600 mt-1 text-xs sm:text-sm">
                   View and manage your uploaded question images
                 </p>
               </div>
-              <div className="flex items-center space-x-3">
-                <Badge className="bg-purple-100 text-purple-800 border-0">
+              <div className="flex items-center space-x-2 sm:space-x-3 w-full sm:w-auto">
+                <Badge className="bg-purple-100 text-purple-800 border-0 text-xs sm:text-sm hidden sm:flex">
                   <Camera className="w-3 h-3 mr-1" />
                   Premium Feature
                 </Badge>
                 <Button
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  className="bg-purple-600 hover:bg-purple-700 text-white flex-1 sm:flex-none text-sm"
                   onClick={() => setShowUploadModal(true)}
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  Upload New Image
+                  <span className="hidden sm:inline">Upload New Image</span>
+                  <span className="sm:hidden">Upload</span>
                 </Button>
               </div>
             </div>
@@ -281,28 +284,28 @@ export default function MyImagesPage() {
         </div>
 
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto p-6">
+        <div className="max-w-7xl mx-auto p-3 sm:p-6">
           {/* Info Card */}
-          <Card className="mb-6 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 border-purple-200 shadow-md">
-            <CardContent className="p-6">
-              <div className="flex items-start space-x-4">
-                <div className="p-3 bg-purple-100 rounded-lg shadow-sm">
-                  <HelpCircle className="w-6 h-6 text-purple-600" />
+          <Card className="mb-4 sm:mb-6 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 border-purple-200 shadow-md">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-start space-x-3 sm:space-x-4">
+                <div className="p-2 sm:p-3 bg-purple-100 rounded-lg shadow-sm flex-shrink-0">
+                  <HelpCircle className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 mb-2">How to Use My Images</h3>
-                  <ul className="text-sm text-gray-700 space-y-1.5">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">How to Use My Images</h3>
+                  <ul className="text-xs sm:text-sm text-gray-700 space-y-1 sm:space-y-1.5">
                     <li className="flex items-center">
-                      <span className="w-1.5 h-1.5 bg-purple-600 rounded-full mr-2"></span>
-                      Upload images using the button above
+                      <span className="w-1.5 h-1.5 bg-purple-600 rounded-full mr-2 flex-shrink-0"></span>
+                      <span>Upload images using the button above</span>
                     </li>
                     <li className="flex items-center">
-                      <span className="w-1.5 h-1.5 bg-purple-600 rounded-full mr-2"></span>
-                      Click any image to get AI help with Study Helper
+                      <span className="w-1.5 h-1.5 bg-purple-600 rounded-full mr-2 flex-shrink-0"></span>
+                      <span>Click any image to get AI help with Study Helper</span>
                     </li>
                     <li className="flex items-center">
-                      <span className="w-1.5 h-1.5 bg-purple-600 rounded-full mr-2"></span>
-                      All your images are saved and organized here
+                      <span className="w-1.5 h-1.5 bg-purple-600 rounded-full mr-2 flex-shrink-0"></span>
+                      <span>All your images are saved and organized here</span>
                     </li>
                   </ul>
                 </div>
@@ -323,17 +326,17 @@ export default function MyImagesPage() {
       {/* Floating Study Helper */}
         {showStudyHelper && selectedImage && (
           <div className="fixed inset-0 z-50 pointer-events-none">
-            <div className={`absolute bottom-6 right-6 pointer-events-auto ${getSizeClasses()} transition-all duration-300`}>
-              <Card className="shadow-2xl border-gray-300 h-full bg-white">
-                <CardHeader className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-3">
+            <div className={`pointer-events-auto ${getSizeClasses()} fixed inset-x-2 bottom-2 sm:inset-auto sm:bottom-4 sm:right-4 md:bottom-6 md:right-6 transition-all duration-300`}>
+              <Card className="shadow-2xl border-gray-300 h-full bg-white rounded-lg sm:rounded-xl">
+                <CardHeader className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-2.5 sm:p-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center text-base">
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Study Helper
+                    <CardTitle className="flex items-center text-sm sm:text-base">
+                      <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
+                      <span>Study Helper</span>
                     </CardTitle>
-                    <div className="flex items-center space-x-2">
-                      {/* Size Controls */}
-                      <div className="flex items-center space-x-1 bg-white/20 rounded-lg px-2 py-1">
+                    <div className="flex items-center space-x-1.5 sm:space-x-2">
+                      {/* Size Controls - Hidden on mobile */}
+                      <div className="hidden sm:flex items-center space-x-1 bg-white/20 rounded-lg px-2 py-1">
                         <button
                           onClick={() => setHelperSize('small')}
                           className={`text-xs px-1.5 py-0.5 rounded ${helperSize === 'small' ? 'bg-white/30' : 'hover:bg-white/10'}`}
@@ -359,49 +362,49 @@ export default function MyImagesPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 w-6 p-0 hover:bg-white/20"
+                        className="h-5 w-5 sm:h-6 sm:w-6 p-0 hover:bg-white/20"
                         onClick={() => {
                           setShowStudyHelper(false)
                           setSelectedImage(null)
                           setChatMessages([])
                         }}
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="p-4 flex flex-col h-[calc(100%-3.5rem)] overflow-hidden bg-white">
+                <CardContent className="p-3 sm:p-4 flex flex-col h-[calc(100%-2.5rem)] sm:h-[calc(100%-3.5rem)] overflow-hidden bg-white">
                   {selectedImage ? (
                     <>
                       {/* Selected Image Preview */}
-                      <div className="mb-3 flex-shrink-0">
+                      <div className="mb-2 sm:mb-3 flex-shrink-0">
                         <div className="relative rounded-lg overflow-hidden border-2 border-purple-200 shadow-sm">
                           <img
                             src={selectedImage.image_url}
                             alt="Selected question"
                             className={`w-full object-contain bg-gray-50 ${
-                              helperSize === 'small' ? 'h-40' :
-                              helperSize === 'medium' ? 'h-56' :
-                              'h-72'
+                              helperSize === 'small' ? 'h-32 sm:h-40' :
+                              helperSize === 'medium' ? 'h-40 sm:h-56' :
+                              'h-48 sm:h-72'
                             }`}
                           />
                         </div>
-                        <p className="text-xs text-gray-500 mt-1.5 text-center">
+                        <p className="text-[10px] sm:text-xs text-gray-500 mt-1 sm:mt-1.5 text-center">
                           {new Date(selectedImage.uploaded_at).toLocaleDateString()}
                         </p>
                       </div>
 
                       {/* Error Display */}
                       {error && (
-                        <div className="mb-3 flex-shrink-0">
-                          <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start space-x-2">
-                            <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-                            <div className="flex-1">
-                              <p className="text-xs text-red-800">{error}</p>
+                        <div className="mb-2 sm:mb-3 flex-shrink-0">
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-2 sm:p-3 flex items-start space-x-2">
+                            <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[10px] sm:text-xs text-red-800">{error}</p>
                               <button
                                 onClick={() => setError(null)}
-                                className="text-xs text-red-600 hover:text-red-800 underline mt-1"
+                                className="text-[10px] sm:text-xs text-red-600 hover:text-red-800 underline mt-1"
                               >
                                 Dismiss
                               </button>
@@ -412,36 +415,36 @@ export default function MyImagesPage() {
 
                       {/* Initial Analysis - Hidden from user, runs in background */}
                       {isAnalyzing && chatMessages.length === 0 && !error && (
-                        <div className="text-center py-3 flex-shrink-0">
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600 mx-auto mb-2"></div>
-                          <p className="text-xs text-gray-600">Ready to help!</p>
+                        <div className="text-center py-2 sm:py-3 flex-shrink-0">
+                          <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-purple-600 mx-auto mb-1.5 sm:mb-2"></div>
+                          <p className="text-[10px] sm:text-xs text-gray-600">Ready to help!</p>
                         </div>
                       )}
 
                       {/* Chat Messages */}
-                      <div className="flex-1 overflow-y-auto mb-3 space-y-3 min-h-0" id="chat-messages-container">
+                      <div className="flex-1 overflow-y-auto mb-2 sm:mb-3 space-y-2 sm:space-y-3 min-h-0" id="chat-messages-container">
                         {chatMessages.map((msg, idx) => (
                           <div
                             key={idx}
                             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                           >
                             <div
-                              className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                              className={`max-w-[85%] rounded-xl sm:rounded-2xl px-3 py-2 sm:px-4 sm:py-3 ${
                                 msg.role === 'user'
                                   ? 'bg-purple-600 text-white'
                                   : 'bg-gray-100 text-gray-900 border border-gray-200'
                               }`}
                             >
-                              <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                              <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                             </div>
                           </div>
                         ))}
                         {isChatLoading && (
                           <div className="flex justify-start">
-                            <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-gray-100 border border-gray-200">
+                            <div className="max-w-[85%] rounded-xl sm:rounded-2xl px-3 py-2 sm:px-4 sm:py-3 bg-gray-100 border border-gray-200">
                               <div className="flex items-center space-x-2">
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
-                                <p className="text-sm text-gray-600">Thinking...</p>
+                                <div className="animate-spin rounded-full h-3.5 w-3.5 sm:h-4 sm:w-4 border-b-2 border-purple-600"></div>
+                                <p className="text-xs sm:text-sm text-gray-600">Thinking...</p>
                               </div>
                             </div>
                           </div>
@@ -450,30 +453,30 @@ export default function MyImagesPage() {
                       </div>
 
                       {/* Quick Prompts */}
-                      <div className="grid grid-cols-1 gap-2 mb-3 flex-shrink-0">
+                      <div className="grid grid-cols-1 gap-1.5 sm:gap-2 mb-2 sm:mb-3 flex-shrink-0">
                         <button
                           onClick={() => handleQuickPrompt("What is this question asking?")}
                           disabled={isChatLoading}
-                          className="text-left px-3 py-2 text-xs text-gray-900 rounded-xl border border-gray-300 hover:bg-purple-50 hover:border-purple-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white"
+                          className="text-left px-2.5 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-xs text-gray-900 rounded-lg sm:rounded-xl border border-gray-300 hover:bg-purple-50 hover:border-purple-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white"
                         >
-                          <span className="mr-2">💡</span>
-                          What is this question asking?
+                          <span className="mr-1.5 sm:mr-2">💡</span>
+                          <span>What is this question asking?</span>
                         </button>
                         <button
                           onClick={() => handleQuickPrompt("Give me hints to solve this")}
                           disabled={isChatLoading}
-                          className="text-left px-3 py-2 text-xs text-gray-900 rounded-xl border border-gray-300 hover:bg-purple-50 hover:border-purple-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white"
+                          className="text-left px-2.5 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-xs text-gray-900 rounded-lg sm:rounded-xl border border-gray-300 hover:bg-purple-50 hover:border-purple-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white"
                         >
-                          <span className="mr-2">🎯</span>
-                          Give me hints to solve this
+                          <span className="mr-1.5 sm:mr-2">🎯</span>
+                          <span>Give me hints to solve this</span>
                         </button>
                         <button
                           onClick={() => handleQuickPrompt("Explain the solution step-by-step")}
                           disabled={isChatLoading}
-                          className="text-left px-3 py-2 text-xs text-gray-900 rounded-xl border border-gray-300 hover:bg-purple-50 hover:border-purple-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white"
+                          className="text-left px-2.5 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-xs text-gray-900 rounded-lg sm:rounded-xl border border-gray-300 hover:bg-purple-50 hover:border-purple-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white"
                         >
-                          <span className="mr-2">📝</span>
-                          Explain the solution step-by-step
+                          <span className="mr-1.5 sm:mr-2">📝</span>
+                          <span>Explain the solution step-by-step</span>
                         </button>
                       </div>
 
@@ -489,16 +492,16 @@ export default function MyImagesPage() {
                             }
                           }}
                           placeholder="Ask anything about this image..."
-                          className="w-full px-4 py-3 pr-12 text-sm border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white shadow-sm"
+                          className="w-full px-3 py-2 sm:px-4 sm:py-3 pr-10 sm:pr-12 text-xs sm:text-sm border border-gray-300 rounded-xl sm:rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white shadow-sm"
                           disabled={isChatLoading}
                         />
                         <Button
                           size="sm"
-                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl h-8 w-8 p-0 disabled:opacity-50"
+                          className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg sm:rounded-xl h-7 w-7 sm:h-8 sm:w-8 p-0 disabled:opacity-50"
                           onClick={() => sendChatMessage(chatInput)}
                           disabled={isChatLoading || !chatInput.trim()}
                         >
-                          <Send className="w-4 h-4" />
+                          <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </Button>
                       </div>
                     </>
@@ -512,30 +515,30 @@ export default function MyImagesPage() {
       {/* Upload Modal */}
       {showUploadModal && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-3 sm:p-4"
           onClick={() => setShowUploadModal(false)}
         >
           <Card
             className="w-full max-w-2xl max-h-[90vh] overflow-auto shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <CardHeader className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+            <CardHeader className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 sm:p-6">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl">Upload Question Image</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">Upload Question Image</CardTitle>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowUploadModal(false)}
-                  className="text-white hover:bg-white/20"
+                  className="text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9 p-0"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
               </div>
-              <p className="text-purple-100 text-sm mt-1">
+              <p className="text-purple-100 text-xs sm:text-sm mt-1">
                 Take a photo or select an image from your device
               </p>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <PhotoUpload
                 onImageUploaded={(imageData, imageUrl, imageId) => {
                   handleUploadComplete()
@@ -547,8 +550,8 @@ export default function MyImagesPage() {
                 subject={undefined}
               />
 
-              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
+              <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs sm:text-sm text-blue-800">
                   <strong>Tip:</strong> Make sure your image is clear and the text is readable for best results with AI analysis.
                 </p>
               </div>

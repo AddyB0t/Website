@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { validateContentForClass } from '@/lib/content-validator';
 import { getClassInfo, getLanguageGuidelinesForClass, getMaxStepsForClass } from '@/lib/class-curriculum';
+import { auth } from '@clerk/nextjs/server';
 
 // Helper to extract class level from various inputs
 function extractClassLevel(book?: string, classId?: string): string {
@@ -64,11 +65,53 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // STEP 3: Generate class-specific prompt
+    // STEP 3: Check for question image (user or community)
+    let questionImageUrl = null;
+    let imageSource = null;
+
+    if (questionId) {
+      try {
+        // Get the authenticated user ID
+        const { userId } = auth();
+
+        // First, try to get the user's own image if they're authenticated
+        const { data: userImage } = userId ? await supabase
+          .from('uploaded_question_images')
+          .select('image_url')
+          .eq('question_id', questionId)
+          .eq('user_id', userId)
+          .eq('is_community', false)
+          .single() : { data: null };
+
+        if (userImage) {
+          questionImageUrl = userImage.image_url;
+          imageSource = 'user';
+          console.log(`📷 Found user image for question ${questionId}`);
+        } else {
+          // Check for community image
+          const { data: communityImage } = await supabase
+            .from('uploaded_question_images')
+            .select('image_url')
+            .eq('question_id', questionId)
+            .eq('is_community', true)
+            .single();
+
+          if (communityImage) {
+            questionImageUrl = communityImage.image_url;
+            imageSource = 'community';
+            console.log(`📷 Found community image for question ${questionId}`);
+          }
+        }
+      } catch (err) {
+        console.log(`ℹ️ No image found for question ${questionId}`);
+      }
+    }
+
+    // STEP 4: Generate class-specific prompt
     const classInfo = getClassInfo(actualClassLevel);
     const maxSteps = getMaxStepsForClass(actualClassLevel);
     const languageGuidelines = getLanguageGuidelinesForClass(actualClassLevel);
-    
+
     const prompt = generateClassSpecificPrompt({
       question,
       book: book || `Class ${actualClassLevel} Mathematics`,
@@ -77,7 +120,9 @@ export async function POST(request: NextRequest) {
       classLevel: actualClassLevel,
       classInfo,
       maxSteps,
-      languageGuidelines
+      languageGuidelines,
+      hasImage: !!questionImageUrl,
+      imageSource
     });
 
     // Generate answer with OpenRouter
@@ -197,13 +242,15 @@ function generateClassSpecificPrompt(params: {
   classInfo: any;
   maxSteps: number;
   languageGuidelines: string;
+  hasImage?: boolean;
+  imageSource?: 'user' | 'community' | null;
 }): string {
-  const { question, book, chapter, exercise, classLevel, classInfo, maxSteps, languageGuidelines } = params;
+  const { question, book, chapter, exercise, classLevel, classInfo, maxSteps, languageGuidelines, hasImage, imageSource } = params;
   
   const ageInfo = classInfo ? `(ages ${classInfo.age}, ${classInfo.level} level)` : '';
   const focusAreas = classInfo?.learningFocus?.slice(0, 3).join(', ') || 'mathematics fundamentals';
   
-  return `You are helping a Class ${classLevel} student ${ageInfo} solve a mathematics question.
+  return `You are helping a Class ${classLevel} student ${ageInfo} solve an academic question.
 
 CONTEXT:
 - Book: ${book}
@@ -223,7 +270,7 @@ ${languageGuidelines}
 
 SOLUTION REQUIREMENTS:
 - Maximum ${maxSteps} steps (keep it concise)
-- Use age-appropriate mathematical terminology
+- Use age-appropriate terminology for the subject
 - Explain WHY each step is necessary
 - Connect to real-world examples when helpful
 - Include relevant worked examples from the same exercise or chapter
@@ -234,48 +281,55 @@ EXERCISE IDENTIFICATION:
 - Extract exercise name (e.g., "Word Problems", "Practice Set") if mentioned
 - Include relevant worked examples from the same exercise or chapter
 
+${hasImage ? `IMAGE CONTEXT:
+- An image has been uploaded for this question (source: ${imageSource === 'user' ? 'student upload' : 'community'})
+- The image may contain diagrams, figures, or additional visual information needed to solve the problem
+- Reference the visual elements when explaining your solution
+- If the question references a diagram or figure, assume it is provided in the uploaded image
+` : ''}
 QUESTION:
 ${question}
 
-Provide a clear, step-by-step solution that a Class ${classLevel} student can understand and learn from. Reference the exercise context and include examples when helpful.`;
+Provide a clear, step-by-step explanation or solution that a Class ${classLevel} student can understand and learn from. Reference the exercise context and include examples when helpful.${hasImage ? ' If the question requires visual information (diagrams, graphs, etc.), acknowledge the uploaded image in your explanation.' : ''}`;
 }
 
 // Helper function to get system prompt based on class level
 function getSystemPromptForClass(classLevel: string): string {
   const classNum = parseInt(classLevel);
-  
+
   if (classNum <= 8) {
-    return `You are an expert mathematics tutor specializing in elementary mathematics (Classes 6-8). 
+    return `You are an expert academic tutor specializing in elementary education (Classes 6-8).
 
-Your expertise includes:
-- Basic arithmetic and number systems
-- Introductory algebra and geometry
-- Simple data handling and mensuration
-- Age-appropriate problem-solving techniques
+Your expertise includes all subjects:
+- Mathematics: Basic arithmetic, algebra, and geometry
+- Science: Physics, Chemistry, Biology fundamentals
+- Social Studies: History, Geography, Civics
+- English: Literature, Grammar, Comprehension
+- Age-appropriate problem-solving techniques across all subjects
 
-IMPORTANT: If a question contains advanced topics like calculus, regression, advanced statistics, or college-level mathematics, politely indicate that these topics are typically covered in higher classes and suggest the student consult their teacher.`;
+IMPORTANT: If a question contains advanced topics typically covered in higher classes, politely indicate this and suggest the student consult their teacher.`;
   } else if (classNum <= 10) {
-    return `You are an expert mathematics tutor specializing in secondary mathematics (Classes 9-10).
+    return `You are an expert academic tutor specializing in secondary education (Classes 9-10).
 
-Your expertise includes:
-- Number systems and polynomials
-- Coordinate geometry and trigonometry
-- Quadratic equations and arithmetic progressions
-- Basic statistics and probability
-- Geometric proofs and constructions
+Your expertise includes all subjects:
+- Mathematics: Algebra, Geometry, Trigonometry, Statistics
+- Science: Advanced Physics, Chemistry, Biology concepts
+- Social Studies: World History, Indian History, Geography, Political Science, Economics
+- English: Advanced Literature, Grammar, Writing Skills
+- Age-appropriate explanations for all academic topics
 
-Always ensure your explanations are appropriate for secondary school students.`;
+Always ensure your explanations are appropriate for secondary school students across all subjects.`;
   } else {
-    return `You are an expert mathematics tutor specializing in higher secondary mathematics (Classes 11-12).
+    return `You are an expert academic tutor specializing in higher secondary education (Classes 11-12).
 
-Your expertise includes:
-- Advanced algebra and calculus
-- Matrices, determinants, and vectors
-- Advanced trigonometry and coordinate geometry
-- Statistics, probability, and mathematical reasoning
-- Applications of mathematics in various fields
+Your expertise includes all subjects:
+- Mathematics: Calculus, Advanced Algebra, Statistics, Applied Mathematics
+- Science: Advanced Physics, Chemistry, Biology (PCB/PCM streams)
+- Humanities: History, Political Science, Economics, Geography, Psychology
+- Commerce: Accountancy, Business Studies, Economics
+- English: Literature Analysis, Advanced Writing, Language Studies
 
-Provide comprehensive solutions suitable for students preparing for competitive exams and higher education.`;
+Provide comprehensive solutions suitable for students preparing for board exams, competitive exams, and higher education across all academic subjects.`;
   }
 }
 

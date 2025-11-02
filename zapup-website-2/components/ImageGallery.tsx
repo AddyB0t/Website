@@ -16,7 +16,9 @@ import {
   AlertCircle,
   ExternalLink,
   RefreshCw,
-  HelpCircle
+  HelpCircle,
+  Link,
+  Users
 } from 'lucide-react'
 import { UploadedImage } from '@/lib/supabase'
 import { format } from 'date-fns'
@@ -241,6 +243,22 @@ export const ImageGallery = forwardRef<ImageGalleryRef, ImageGalleryProps>(
                   {image.subject && (
                     <Badge variant="outline" className="text-xs text-gray-900">
                       {image.subject}
+                    </Badge>
+                  )}
+                </div>
+              )}
+
+              {/* Question Link Status */}
+              {image.question_id && (
+                <div className="flex gap-2 items-center">
+                  <Badge className="text-xs bg-blue-100 text-blue-800 flex items-center gap-1">
+                    <Link className="w-3 h-3" />
+                    Linked to Question #{image.question_id}
+                  </Badge>
+                  {image.is_community && (
+                    <Badge className="text-xs bg-purple-100 text-purple-800 flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      Community
                     </Badge>
                   )}
                 </div>

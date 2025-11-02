@@ -23,6 +23,8 @@ export async function POST(request: NextRequest) {
     const classLevel = formData.get('class_level') as string | null;
     const subject = formData.get('subject') as string | null;
     const tagsString = formData.get('tags') as string | null;
+    const questionIdString = formData.get('question_id') as string | null;
+    const isCommunity = formData.get('is_community') === 'true';
 
     if (!file) {
       return NextResponse.json(
@@ -48,8 +50,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse tags
+    // Parse tags and question ID
     const tags = tagsString ? JSON.parse(tagsString) : [];
+    const questionId = questionIdString ? parseInt(questionIdString) : undefined;
+
+    // Validate question ID if provided
+    if (questionIdString && (isNaN(questionId!) || questionId! <= 0)) {
+      return NextResponse.json(
+        { error: 'Invalid question ID' },
+        { status: 400 }
+      );
+    }
 
     // Upload to Supabase
     const result = await imageStorageService.uploadQuestionImage(
@@ -60,7 +71,9 @@ export async function POST(request: NextRequest) {
         analysis_text: analysisText || undefined,
         class_level: classLevel || undefined,
         subject: subject || undefined,
-        tags
+        tags,
+        question_id: questionId,
+        is_community: isCommunity
       }
     );
 

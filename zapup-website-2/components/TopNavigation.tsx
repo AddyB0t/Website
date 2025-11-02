@@ -112,26 +112,26 @@ export function TopNavigation() {
                   </div>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 shadow-lg border-0">
+              <DropdownMenuContent align="end" className="w-56 shadow-lg border-0 bg-white text-gray-900">
                 <DropdownMenuLabel className="text-gray-900">My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/profile" className="flex items-center space-x-2 cursor-pointer">
+                  <Link href="/profile" className="flex items-center space-x-2 cursor-pointer text-gray-900 hover:bg-gray-100">
                     <User className="w-4 h-4" />
                     <span>Profile</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/settings" className="flex items-center space-x-2 cursor-pointer">
+                  <Link href="/settings" className="flex items-center space-x-2 cursor-pointer text-gray-900 hover:bg-gray-100">
                     <Settings className="w-4 h-4" />
                     <span>Settings</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <SignOutButton 
-                    variant="ghost" 
-                    className="w-full justify-start p-0 h-auto text-gray-700 hover:bg-transparent cursor-pointer"
+                  <SignOutButton
+                    variant="ghost"
+                    className="w-full justify-start p-0 h-auto text-gray-900 hover:bg-gray-100 cursor-pointer"
                     showIcon={true}
                   />
                 </DropdownMenuItem>

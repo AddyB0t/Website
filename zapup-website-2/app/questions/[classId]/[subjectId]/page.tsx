@@ -4,9 +4,9 @@
 
 'use client'
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, ChevronDown, ChevronRight, Loader2, AlertCircle } from "lucide-react"
+import { ArrowLeft, ChevronDown, ChevronRight, Loader2, AlertCircle, Upload, X, Image as ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AppLayout } from "@/components/AppLayout"
 import { getSubjectDisplayName } from '@/lib/subjects'
@@ -15,15 +15,22 @@ import { QuestionChatbot } from "@/components/QuestionChatbot"
 import { QuestionUsageDisplay } from "@/components/QuestionUsageDisplay"
 import { SUBSCRIPTION_FEATURES } from '@/lib/subscriptions'
 import { ExerciseBadge } from '@/components/ExerciseBadge'
+import { Badge } from "@/components/ui/badge"
+import Image from 'next/image'
+import { useUser } from '@clerk/nextjs'
 
 // Answer Section Component
 function AnswerSection({ question, subject, classId }: { question: Question | undefined, subject: string, classId: string }) {
+  const { user } = useUser()
   const [answer, setAnswer] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { preferences } = useUserPreferences()
   const [usageError, setUsageError] = useState<string | null>(null)
   const [usageLimitReached, setUsageLimitReached] = useState(false)
+  const [questionImage, setQuestionImage] = useState<any>(null)
+  const [imageSource, setImageSource] = useState<'user' | 'community' | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   const generateAnswer = async () => {
     if (!question) return
@@ -107,48 +114,251 @@ function AnswerSection({ question, subject, classId }: { question: Question | un
     if (question) {
       setAnswer(null)
       setError(null)
+      fetchQuestionImage()
     }
-  }, [question])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [question?.id])
+
+  const fetchQuestionImage = async () => {
+    if (!question) return
+
+    try {
+      const headers: HeadersInit = {};
+      if (user?.id) {
+        headers['x-user-id'] = user.id;
+      }
+
+      const response = await fetch(`/api/question-images/${question.id}`, { headers })
+      if (response.ok) {
+        const data = await response.json()
+        setQuestionImage(data.image)
+        setImageSource(data.source)
+      } else {
+        setQuestionImage(null)
+        setImageSource(null)
+      }
+    } catch (err) {
+      console.error('Error fetching question image:', err)
+      setQuestionImage(null)
+      setImageSource(null)
+    }
+  }
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault()
+    const file = event.target.files?.[0]
+    if (!file || !question) return
+
+    setUploadingImage(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('question_id', question.id.toString())
+      formData.append('is_community', 'false')
+      formData.append('class_level', classId)
+      formData.append('subject', subject)
+
+      const response = await fetch('/api/upload-question-image', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || 'Failed to upload image')
+      }
+
+      const data = await response.json()
+      setQuestionImage(data.image)
+      setImageSource('user')
+      alert('Image uploaded successfully!')
+
+      // Clear the file input
+      event.target.value = ''
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to upload image'
+      console.error('Error uploading image:', errorMessage, err)
+      alert(`Failed to upload image: ${errorMessage}`)
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  const handleRemoveImage = async () => {
+    if (!question || !user?.id) return
+
+    if (!confirm('Are you sure you want to remove this image from this question?')) {
+      return
+    }
+
+    try {
+      const headers: HeadersInit = {
+        'x-user-id': user.id
+      };
+
+      const response = await fetch(`/api/question-images/${question.id}`, {
+        method: 'DELETE',
+        headers
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || 'Failed to remove image')
+      }
+
+      setQuestionImage(null)
+      setImageSource(null)
+      alert('Image removed successfully!')
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to remove image'
+      console.error('Error removing image:', errorMessage, err)
+      alert(`Failed to remove image: ${errorMessage}`)
+    }
+  }
 
   if (!question) return null
 
+  // Define subjects that allow image uploads (scientific/mathematical)
+  const allowImageUpload = [
+    'mathematics', 'math', 'maths',
+    'physics', 'chemistry', 'biology',
+    'science', 'geometry', 'algebra',
+    'calculus', 'trigonometry', 'statistics'
+  ].some(allowed => subject.toLowerCase().includes(allowed))
+
   return (
-    <div className="py-4">
-      <div className="text-gray-700 mb-4">
+    <div className="py-3 sm:py-4">
+      <div className="text-gray-700 mb-3 sm:mb-4 text-sm sm:text-base">
         <span className="font-medium">Question {question.displayNumber || question.question_number || question.order_index}:</span> {question.text}
       </div>
-      <div className="text-center py-8">
-        <Button 
+
+      {/* Image Upload Section - Only for scientific/mathematical subjects */}
+      {allowImageUpload && (
+      <div className="border rounded-lg p-3 sm:p-4 bg-white mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="font-semibold text-xs sm:text-sm text-gray-700 flex items-center">
+            <ImageIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+            Question Image
+          </h4>
+          {imageSource && (
+            <Badge variant={imageSource === 'user' ? 'default' : 'secondary'} className="text-xs">
+              {imageSource === 'user' ? 'Your Image' : 'Community'}
+            </Badge>
+          )}
+        </div>
+
+        {questionImage ? (
+          <div className="space-y-3">
+            <div className="relative w-full h-32 sm:h-48 bg-gray-100 rounded-lg overflow-hidden">
+              <Image
+                src={questionImage.image_url}
+                alt="Question"
+                fill
+                className="object-contain"
+              />
+            </div>
+            <div className="flex gap-2">
+              <label className="flex-1">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  disabled={uploadingImage}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs sm:text-sm"
+                  disabled={uploadingImage}
+                  asChild
+                >
+                  <span>
+                    <Upload className="w-3 h-3 mr-2" />
+                    {uploadingImage ? 'Uploading...' : 'Replace Image'}
+                  </span>
+                </Button>
+              </label>
+              {imageSource === 'user' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRemoveImage}
+                  className="text-xs sm:text-sm"
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              )}
+            </div>
+            {imageSource === 'community' && (
+              <p className="text-xs text-gray-500 text-center">
+                This is a community image. Upload your own to replace it.
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-4 sm:py-6">
+            <label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+                disabled={uploadingImage}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs sm:text-sm"
+                disabled={uploadingImage}
+                asChild
+              >
+                <span>
+                  <Upload className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                  {uploadingImage ? 'Uploading...' : 'Upload Question Image'}
+                </span>
+              </Button>
+            </label>
+            <p className="text-xs text-gray-500 mt-2">
+              Add an image if the question requires a diagram or is incomplete
+            </p>
+          </div>
+        )}
+      </div>
+      )}
+
+      <div className="text-center py-4 sm:py-8">
+        <Button
           onClick={generateAnswer}
-          className="bg-blue-600 hover:bg-blue-700 text-white"
+          className="bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base w-full sm:w-auto"
           disabled={isGenerating || usageLimitReached}
         >
           {isGenerating ? 'Generating...' : 'Generate Answer'}
         </Button>
         {usageError && (
-          <div className="mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">
+          <div className="mt-3 text-xs sm:text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">
             {usageError}
           </div>
         )}
       </div>
 
       {isGenerating && (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-          <span className="ml-3 text-gray-600">Generating answer...</span>
+        <div className="flex items-center justify-center py-6 sm:py-8">
+          <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-blue-600" />
+          <span className="ml-3 text-sm sm:text-base text-gray-600">Generating answer...</span>
         </div>
       )}
 
       {error && (
-        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+        <div className="text-xs sm:text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
           {error}
         </div>
       )}
 
       {answer && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <div className="font-medium text-green-800 mb-2">Answer:</div>
-          <div className="text-gray-700 whitespace-pre-wrap">{answer}</div>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4 overflow-x-auto">
+          <div className="font-medium text-green-800 mb-2 text-sm sm:text-base">Answer:</div>
+          <div className="text-gray-700 whitespace-pre-wrap text-xs sm:text-sm break-words">{answer}</div>
         </div>
       )}
     </div>
@@ -207,18 +417,43 @@ export default function SubjectQuestionsPage() {
   // Get subscription features
   const subscriptionFeatures = SUBSCRIPTION_FEATURES[preferences.subscriptionType]
 
+  // Load questions for a specific chapter and section
+  const loadQuestions = useCallback(async (chapterId: string, sectionId: string) => {
+    try {
+      setLoadingQuestions(true)
+
+      const response = await fetch(`/api/questions/${classId}/${subjectId}?chapter=${chapterId}&section=${sectionId}`)
+      if (!response.ok) {
+        throw new Error('Failed to load questions')
+      }
+
+      const data = await response.json()
+      setQuestions(data.section?.questions || [])
+
+      // Auto-select first question
+      if (data.section?.questions && data.section.questions.length > 0) {
+        setSelectedQuestion(data.section.questions[0].id)
+      }
+    } catch (err) {
+      console.error('Error loading questions:', err)
+      setQuestions([])
+    } finally {
+      setLoadingQuestions(false)
+    }
+  }, [classId, subjectId])
+
   // Load chapters when component mounts
   useEffect(() => {
     const loadChapters = async () => {
       try {
         setLoading(true)
         setError(null)
-        
+
         const response = await fetch(`/api/questions/${classId}/${subjectId}`)
         if (!response.ok) {
           throw new Error('Failed to load chapters')
         }
-        
+
         const data = await response.json()
         setChapters(data.chapters || [])
 
@@ -227,7 +462,7 @@ export default function SubjectQuestionsPage() {
           const firstChapter = data.chapters[0]
           setExpandedChapters(new Set([firstChapter.id]))
           setSelectedChapter(firstChapter.id)
-          
+
           // Auto-select first section if available
           if (firstChapter.sections && firstChapter.sections.length > 0) {
             const firstSection = firstChapter.sections[0]
@@ -244,32 +479,7 @@ export default function SubjectQuestionsPage() {
     }
 
     loadChapters()
-  }, [classId, subjectId])
-
-  // Load questions for a specific chapter and section
-  const loadQuestions = async (chapterId: string, sectionId: string) => {
-    try {
-      setLoadingQuestions(true)
-      
-      const response = await fetch(`/api/questions/${classId}/${subjectId}?chapter=${chapterId}&section=${sectionId}`)
-      if (!response.ok) {
-        throw new Error('Failed to load questions')
-      }
-      
-      const data = await response.json()
-      setQuestions(data.section?.questions || [])
-      
-      // Auto-select first question
-      if (data.section?.questions && data.section.questions.length > 0) {
-        setSelectedQuestion(data.section.questions[0].id)
-      }
-    } catch (err) {
-      console.error('Error loading questions:', err)
-      setQuestions([])
-    } finally {
-      setLoadingQuestions(false)
-    }
-  }
+  }, [classId, subjectId, loadQuestions])
 
   const toggleChapter = (chapterId: string) => {
     const newExpanded = new Set(expandedChapters)
@@ -442,18 +652,18 @@ export default function SubjectQuestionsPage() {
           </div>
 
           {/* Center Section - Questions */}
-          <div className="flex-1 flex">
-            <div className="w-1/2 bg-white border-r border-gray-200 flex flex-col">
-              <div className="p-4 border-b border-gray-200 bg-blue-50">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {selectedSection ? 
+          <div className="flex-1 flex flex-col md:flex-row">
+            <div className="w-full md:w-1/2 bg-white border-b md:border-b-0 md:border-r border-gray-200 flex flex-col">
+              <div className="p-3 sm:p-4 border-b border-gray-200 bg-blue-50">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+                  {selectedSection ?
                     currentChapter?.sections.find(s => s.id === selectedSection)?.title || 'Section Questions' :
                     'Section Questions'
                   }
                 </h3>
               </div>
-              
-              <div className="p-4 flex-1 overflow-y-auto">
+
+              <div className="p-3 sm:p-4 flex-1 overflow-y-auto max-h-[50vh] md:max-h-none">
                 {loadingQuestions ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
@@ -477,24 +687,24 @@ export default function SubjectQuestionsPage() {
                       <button
                         key={question.id}
                         onClick={() => setSelectedQuestion(question.id)}
-                        className={`w-full text-left p-4 rounded-lg border-2 mb-3 transition-all ${
+                        className={`w-full text-left p-3 sm:p-4 rounded-lg border-2 mb-2 sm:mb-3 transition-all ${
                           selectedQuestion === question.id
                             ? 'border-blue-500 bg-blue-50'
                             : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                         }`}
                       >
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="font-medium text-blue-600">
+                        <div className="flex items-center gap-2 mb-1.5 sm:mb-2 flex-wrap">
+                          <div className="font-medium text-blue-600 text-sm sm:text-base">
                             Question {questionWithDisplay.displayNumber}:
                           </div>
-                          <ExerciseBadge 
+                          <ExerciseBadge
                             exerciseName={question.exercise_name}
                             exerciseNumber={question.exercise_number}
                             variant="secondary"
                             className="text-xs"
                           />
                         </div>
-                        <div className="text-gray-700 text-sm leading-relaxed">
+                        <div className="text-gray-700 text-xs sm:text-sm leading-relaxed">
                           {question.text}
                         </div>
                       </button>
@@ -505,25 +715,28 @@ export default function SubjectQuestionsPage() {
             </div>
 
             {/* Right Section - Answers */}
-            <div className="w-1/2 bg-white">
-              <div className="p-4 border-b border-gray-200 bg-green-50">
-                <h3 className="text-lg font-semibold text-gray-900">Answer & Solution</h3>
+            <div className="w-full md:w-1/2 bg-white flex flex-col">
+              <div className="p-3 sm:p-4 border-b border-gray-200 bg-green-50 flex-shrink-0">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Answer & Solution</h3>
               </div>
-              
-              <div className="p-4">
+
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4">
                 {selectedQuestion ? (
-                  <AnswerSection 
-                    question={currentQuestionWithDisplay} 
+                  <AnswerSection
+                    question={currentQuestionWithDisplay}
                     subject={subjectId}
                     classId={classId}
                   />
                 ) : (
-                  <div className="text-center py-12">
-                    <div className="text-gray-500 mb-4">
+                  <div className="text-center py-8 sm:py-12">
+                    <div className="text-gray-500 mb-3 sm:mb-4 text-sm sm:text-base">
                       Select a question to view the answer
                     </div>
-                    <div className="text-sm text-gray-400">
-                      Choose any question from the left panel to see its detailed solution
+                    <div className="text-xs sm:text-sm text-gray-400 px-4">
+                      Choose any question from the {' '}
+                      <span className="md:hidden">above</span>
+                      <span className="hidden md:inline">left</span>
+                      {' '}panel to see its detailed solution
                     </div>
                   </div>
                 )}

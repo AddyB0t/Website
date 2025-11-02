@@ -4,7 +4,7 @@
 
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Clock, Zap, Crown } from 'lucide-react'
@@ -37,7 +37,7 @@ export function QuestionUsageDisplay({
   const subscriptionFeatures = SUBSCRIPTION_FEATURES[preferences.subscriptionType]
   const isExplorer = preferences.subscriptionType === 'explorer'
 
-  const fetchUsage = async () => {
+  const fetchUsage = useCallback(async () => {
     if (!isExplorer) {
       setLoading(false)
       return
@@ -70,11 +70,11 @@ export function QuestionUsageDisplay({
     } finally {
       setLoading(false)
     }
-  }
+  }, [isExplorer, subjectId, classId])
 
   useEffect(() => {
     fetchUsage()
-  }, [subjectId, classId, isExplorer])
+  }, [fetchUsage])
 
   // Refresh usage every 5 seconds when chatbot is open
   useEffect(() => {
@@ -85,7 +85,7 @@ export function QuestionUsageDisplay({
     }, 5000)
 
     return () => clearInterval(interval)
-  }, [showInChatbot, isExplorer, subjectId, classId])
+  }, [showInChatbot, isExplorer, fetchUsage])
 
   // Listen for question asked events
   useEffect(() => {
@@ -98,16 +98,21 @@ export function QuestionUsageDisplay({
 
     // Listen for custom events
     window.addEventListener('questionAsked', handleQuestionAsked)
-    
+
     return () => {
       window.removeEventListener('questionAsked', handleQuestionAsked)
     }
-  }, [])
+  }, [fetchUsage])
 
   // Expose refresh function globally for chatbot
   useEffect(() => {
     (window as any).refreshQuestionUsage = fetchUsage
-  }, [])
+
+    // Cleanup: remove global function when component unmounts
+    return () => {
+      delete (window as any).refreshQuestionUsage
+    }
+  }, [fetchUsage])
 
   // Only show for Explorer plan users (limited questions)
   if (preferences.subscriptionType !== 'explorer' || subscriptionFeatures.maxQuestionsPerDay === Infinity) {

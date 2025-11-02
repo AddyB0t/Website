@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Loader2, AlertCircle, BookOpen, Brain, ChevronRight } from "lucide-react"
+import { ArrowLeft, Loader2, AlertCircle, BookOpen, Brain, ChevronRight, Upload, X, Image as ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { AppLayout } from "@/components/AppLayout"
 import { getSubjectDisplayName } from '@/lib/subjects'
 import { useUserPreferences } from '@/contexts/UserPreferencesContext'
+import Image from 'next/image'
 
 interface Question {
   id: string
@@ -49,6 +50,9 @@ export default function UnifiedSubjectQuestionsPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null)
   const [userContext, setUserContext] = useState<any>(null)
+  const [questionImage, setQuestionImage] = useState<any>(null)
+  const [imageSource, setImageSource] = useState<'user' | 'community' | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   // Extract class number from classId (e.g., "class-8th" -> "8", "8" -> "8")
   const classNumber = classId?.toString().replace('class-', '').replace('th', '')
@@ -105,8 +109,78 @@ export default function UnifiedSubjectQuestionsPage() {
     }
   }
 
-  const handleQuestionSelect = (question: Question) => {
+  const handleQuestionSelect = async (question: Question) => {
     setSelectedQuestion(question)
+
+    // Fetch image for this question
+    try {
+      const response = await fetch(`/api/question-images/${question.id}`)
+      if (response.ok) {
+        const data = await response.json()
+        setQuestionImage(data.image)
+        setImageSource(data.source)
+      } else {
+        setQuestionImage(null)
+        setImageSource(null)
+      }
+    } catch (err) {
+      console.error('Error fetching question image:', err)
+      setQuestionImage(null)
+      setImageSource(null)
+    }
+  }
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !selectedQuestion) return
+
+    setUploadingImage(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('question_id', selectedQuestion.id)
+      formData.append('is_community', 'false') // User's personal image by default
+
+      const response = await fetch('/api/upload-question-image', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to upload image')
+      }
+
+      const data = await response.json()
+      setQuestionImage(data.image)
+      setImageSource('user')
+      alert('Image uploaded successfully!')
+    } catch (err) {
+      console.error('Error uploading image:', err)
+      alert('Failed to upload image. Please try again.')
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  const handleRemoveImage = async () => {
+    if (!selectedQuestion) return
+
+    try {
+      const response = await fetch(`/api/question-images/${selectedQuestion.id}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to remove image')
+      }
+
+      setQuestionImage(null)
+      setImageSource(null)
+      alert('Image removed successfully!')
+    } catch (err) {
+      console.error('Error removing image:', err)
+      alert('Failed to remove image. Please try again.')
+    }
   }
 
   const generateAnswer = async (question: Question) => {
@@ -333,15 +407,107 @@ export default function UnifiedSubjectQuestionsPage() {
                             )}
                           </div>
                         </div>
-                        
-                        <Button 
+
+                        {/* Image Upload Section */}
+                        <div className="border rounded-lg p-4 bg-white">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-semibold text-sm text-gray-700 flex items-center">
+                              <ImageIcon className="w-4 h-4 mr-2" />
+                              Question Image
+                            </h4>
+                            {imageSource && (
+                              <Badge variant={imageSource === 'user' ? 'default' : 'secondary'} className="text-xs">
+                                {imageSource === 'user' ? 'Your Image' : 'Community'}
+                              </Badge>
+                            )}
+                          </div>
+
+                          {questionImage ? (
+                            <div className="space-y-3">
+                              <div className="relative w-full h-48 bg-gray-100 rounded-lg overflow-hidden">
+                                <Image
+                                  src={questionImage.image_url}
+                                  alt="Question"
+                                  fill
+                                  className="object-contain"
+                                />
+                              </div>
+                              <div className="flex gap-2">
+                                <label className="flex-1">
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleImageUpload}
+                                    className="hidden"
+                                    disabled={uploadingImage}
+                                  />
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full"
+                                    disabled={uploadingImage}
+                                    asChild
+                                  >
+                                    <span>
+                                      <Upload className="w-3 h-3 mr-2" />
+                                      {uploadingImage ? 'Uploading...' : 'Replace Image'}
+                                    </span>
+                                  </Button>
+                                </label>
+                                {imageSource === 'user' && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleRemoveImage}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                              {imageSource === 'community' && (
+                                <p className="text-xs text-gray-500 text-center">
+                                  This is a community image. Upload your own to replace it.
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-center py-6">
+                              <label>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleImageUpload}
+                                  className="hidden"
+                                  disabled={uploadingImage}
+                                />
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full"
+                                  disabled={uploadingImage}
+                                  asChild
+                                >
+                                  <span>
+                                    <Upload className="w-4 h-4 mr-2" />
+                                    {uploadingImage ? 'Uploading...' : 'Upload Question Image'}
+                                  </span>
+                                </Button>
+                              </label>
+                              <p className="text-xs text-gray-500 mt-2">
+                                Add an image if the question requires a diagram or is incomplete
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        <Button
                           onClick={() => generateAnswer(selectedQuestion)}
                           className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                         >
                           <Brain className="w-4 h-4 mr-2" />
                           Get AI Help with this Question
                         </Button>
-                        
+
                         <p className="text-xs text-gray-500 text-center">
                           Our AI will provide step-by-step solutions and explanations
                         </p>

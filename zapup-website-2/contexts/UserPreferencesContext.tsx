@@ -4,7 +4,7 @@
 
 'use client'
 
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { userPreferencesService, UserPreferences as DBUserPreferences } from '@/lib/client-database'
 import { SubscriptionType } from "@/lib/subscriptions";
@@ -54,26 +54,16 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
   const [isLoading, setIsLoading] = useState(true)
   const { user, isLoaded } = useUser()
 
-  // Load preferences from database when user is loaded
-  useEffect(() => {
-    if (isLoaded && user) {
-      loadUserPreferences()
-    } else if (isLoaded && !user) {
-      setPreferences(defaultPreferences)
-      setIsLoading(false)
-    }
-  }, [isLoaded, user])
-
-  const loadUserPreferences = async () => {
+  const loadUserPreferences = useCallback(async () => {
     if (!user) return
 
     try {
       setIsLoading(true)
       console.log('Loading preferences for user:', user.id)
-      
+
       const dbPreferences = await userPreferencesService.getUserPreferences()
       console.log('Database preferences:', dbPreferences)
-      
+
       if (dbPreferences) {
         setPreferences(dbToContext(dbPreferences))
       } else {
@@ -88,9 +78,9 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
           subscriptionType: 'genius_plus' as SubscriptionType,
         };
         setPreferences(initialPreferences)
-        
+
         console.log('Creating initial preferences:', initialPreferences)
-        
+
         // Save to database
         await userPreferencesService.upsertUserPreferences({
           user_id: user.id,
@@ -105,7 +95,17 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [user])
+
+  // Load preferences from database when user is loaded
+  useEffect(() => {
+    if (isLoaded && user) {
+      loadUserPreferences()
+    } else if (isLoaded && !user) {
+      setPreferences(defaultPreferences)
+      setIsLoading(false)
+    }
+  }, [isLoaded, user, loadUserPreferences])
 
   const updatePreferences = async (newPreferences: Partial<UserPreferences>) => {
     if (!user) return

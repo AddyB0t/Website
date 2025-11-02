@@ -306,6 +306,9 @@ export type UploadedImage = {
   class_level?: string;
   subject?: string;
   tags?: string[];
+  question_id?: number;        // NEW: Links image to a specific question
+  is_community?: boolean;      // NEW: If true, shared with all users
+  linked_at?: string;          // NEW: When image was linked to question
   created_at: string;
   updated_at: string;
 };
@@ -322,6 +325,8 @@ export const imageStorageService = {
       class_level?: string;
       subject?: string;
       tags?: string[];
+      question_id?: number;      // NEW: Link image to question
+      is_community?: boolean;    // NEW: Mark as community image
     }
   ): Promise<{ success: boolean; data?: UploadedImage; error?: string }> {
     if (!supabaseUrl || !supabaseAnonKey) {
@@ -353,6 +358,30 @@ export const imageStorageService = {
         .from('student-question-images')
         .getPublicUrl(storagePath);
 
+      // If linking to a question, check for existing user image and unlink it
+      if (metadata?.question_id) {
+        const { data: existingImage } = await supabase
+          .from('uploaded_question_images')
+          .select('id')
+          .eq('question_id', metadata.question_id)
+          .eq('user_id', userId)
+          .eq('is_community', false)
+          .single();
+
+        // If found, unlink the old image (don't delete, just unlink)
+        if (existingImage) {
+          console.log(`🔄 Unlinking existing image for question ${metadata.question_id}`);
+          await supabase
+            .from('uploaded_question_images')
+            .update({
+              question_id: null,
+              is_community: false,
+              linked_at: null
+            })
+            .eq('id', existingImage.id);
+        }
+      }
+
       // Save metadata to database
       const imageData = {
         user_id: userId,
@@ -364,7 +393,10 @@ export const imageStorageService = {
         analysis_text: metadata?.analysis_text,
         class_level: metadata?.class_level,
         subject: metadata?.subject,
-        tags: metadata?.tags || []
+        tags: metadata?.tags || [],
+        question_id: metadata?.question_id,
+        is_community: metadata?.is_community || false,
+        linked_at: metadata?.question_id ? new Date().toISOString() : null
       };
 
       const { data, error: dbError } = await supabase

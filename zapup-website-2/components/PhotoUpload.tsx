@@ -19,6 +19,8 @@ interface PhotoUploadProps {
   maxSizeMB?: number
   classLevel?: string
   subject?: string
+  questionId?: number | string
+  isCommunity?: boolean
 }
 
 export function PhotoUpload({
@@ -27,7 +29,9 @@ export function PhotoUpload({
   isAnalyzing = false,
   maxSizeMB = 5,
   classLevel,
-  subject
+  subject,
+  questionId,
+  isCommunity = false
 }: PhotoUploadProps) {
   const { preferences } = useUserPreferences()
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
@@ -106,6 +110,8 @@ export function PhotoUpload({
       formData.append('analyzed', 'false')
       if (classLevel) formData.append('class_level', classLevel)
       if (subject) formData.append('subject', subject)
+      if (questionId) formData.append('question_id', questionId.toString())
+      formData.append('is_community', isCommunity.toString())
 
       const response = await fetch('/api/upload-question-image', {
         method: 'POST',

@@ -5,7 +5,7 @@ import { imageStorageService } from '@/lib/supabase';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { imageId: string } }
+  { params }: { params: Promise<{ imageId: string }> }
 ) {
   try {
     // Get user ID from Clerk authentication
@@ -18,7 +18,9 @@ export async function DELETE(
       );
     }
 
-    const { imageId } = params;
+    // Await params in Next.js 15+
+    const resolvedParams = await params;
+    const { imageId } = resolvedParams;
 
     if (!imageId) {
       return NextResponse.json(
