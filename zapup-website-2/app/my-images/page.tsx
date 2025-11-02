@@ -39,38 +39,6 @@ export default function MyImagesPage() {
     chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatMessages])
 
-  const handleImageClick = useCallback((image: UploadedImage) => {
-    setSelectedImage(image)
-    setChatMessages([]) // Clear previous chat
-    setChatInput('')
-    setError(null)
-    setShowStudyHelper(true) // Show the floating helper
-
-    // Auto-analyze image when selected if not already analyzed
-    // Prevent infinite loops by tracking attempted analyses
-    if (!image.analyzed && !image.analysis_text && !analysisAttempted.has(image.id)) {
-      setAnalysisAttempted(prev => new Set(prev).add(image.id))
-      analyzeSelectedImage(image.image_url, image.id)
-    } else if (image.analysis_text) {
-      setImageAnalysis(image.analysis_text)
-    }
-  }, [analysisAttempted, analyzeSelectedImage])
-
-  const getSizeClasses = () => {
-    // On mobile, use viewport-based height to prevent overflow
-    // On desktop, use size controls
-    switch (helperSize) {
-      case 'small':
-        return 'w-full sm:w-80 md:w-96 max-h-[calc(100vh-1rem)] sm:h-[32rem]'
-      case 'medium':
-        return 'w-full sm:w-96 md:w-[32rem] max-h-[calc(100vh-1rem)] sm:h-[42rem]'
-      case 'large':
-        return 'w-full sm:w-[28rem] md:w-[36rem] max-h-[calc(100vh-1rem)] sm:h-[48rem]'
-      default:
-        return 'w-full sm:w-96 md:w-[32rem] max-h-[calc(100vh-1rem)] sm:h-[42rem]'
-    }
-  }
-
   const analyzeSelectedImage = useCallback(async (imageUrl: string, imageId: string) => {
     // Prevent multiple simultaneous analyses
     if (isAnalyzing) return
@@ -128,6 +96,38 @@ export default function MyImagesPage() {
       setIsAnalyzing(false)
     }
   }, [isAnalyzing])
+
+  const handleImageClick = useCallback((image: UploadedImage) => {
+    setSelectedImage(image)
+    setChatMessages([]) // Clear previous chat
+    setChatInput('')
+    setError(null)
+    setShowStudyHelper(true) // Show the floating helper
+
+    // Auto-analyze image when selected if not already analyzed
+    // Prevent infinite loops by tracking attempted analyses
+    if (!image.analyzed && !image.analysis_text && !analysisAttempted.has(image.id)) {
+      setAnalysisAttempted(prev => new Set(prev).add(image.id))
+      analyzeSelectedImage(image.image_url, image.id)
+    } else if (image.analysis_text) {
+      setImageAnalysis(image.analysis_text)
+    }
+  }, [analysisAttempted, analyzeSelectedImage])
+
+  const getSizeClasses = () => {
+    // On mobile, use viewport-based height to prevent overflow
+    // On desktop, use size controls
+    switch (helperSize) {
+      case 'small':
+        return 'w-full sm:w-80 md:w-96 max-h-[calc(100vh-1rem)] sm:h-[32rem]'
+      case 'medium':
+        return 'w-full sm:w-96 md:w-[32rem] max-h-[calc(100vh-1rem)] sm:h-[42rem]'
+      case 'large':
+        return 'w-full sm:w-[28rem] md:w-[36rem] max-h-[calc(100vh-1rem)] sm:h-[48rem]'
+      default:
+        return 'w-full sm:w-96 md:w-[32rem] max-h-[calc(100vh-1rem)] sm:h-[42rem]'
+    }
+  }
 
   const handleImageDelete = useCallback((imageId: string) => {
     // Clear selection if deleted image was selected
