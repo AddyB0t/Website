@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { validateContentForClass } from '@/lib/content-validator';
 import { getClassInfo, getLanguageGuidelinesForClass, getMaxStepsForClass } from '@/lib/class-curriculum';
 import { auth } from '@clerk/nextjs/server';
 
@@ -27,27 +26,13 @@ export async function POST(request: NextRequest) {
     }
 
     const { question, book, chapter, exercise, questionId, classLevel } = await request.json();
-    
+
     // Extract class level for validation
     const actualClassLevel = classLevel || extractClassLevel(book, questionId?.toString());
-    
+
     console.log(`🎯 Generating answer for Class ${actualClassLevel}:`, question.substring(0, 100) + '...');
 
-    // STEP 1: Validate content appropriateness for the class level
-    const validation = validateContentForClass(question, actualClassLevel, 'mathematics');
-    
-    if (!validation.isAppropriate) {
-      console.warn(`❌ Inappropriate content detected for Class ${actualClassLevel}:`, validation.reason);
-      
-      return NextResponse.json({
-        success: false,
-        answer: `This question appears to contain topics that are too advanced for Class ${actualClassLevel}. ${validation.reason}. ${validation.suggestedAction || 'Please check with your teacher for guidance on this topic.'}`
-      });
-    }
-    
-    console.log(`✅ Content validation passed for Class ${actualClassLevel}`);
-    
-    // STEP 2: Check if a solution already exists in the database
+    // STEP 1: Check if a solution already exists in the database
     const { data: existingSolution, error: searchError } = await supabase
       .from('solutions')
       .select('*')
@@ -72,7 +57,7 @@ export async function POST(request: NextRequest) {
     if (questionId) {
       try {
         // Get the authenticated user ID
-        const { userId } = auth();
+        const { userId } = await auth();
 
         // First, try to get the user's own image if they're authenticated
         const { data: userImage } = userId ? await supabase
@@ -85,7 +70,7 @@ export async function POST(request: NextRequest) {
 
         if (userImage) {
           questionImageUrl = userImage.image_url;
-          imageSource = 'user';
+          imageSource = 'user' as const;
           console.log(`📷 Found user image for question ${questionId}`);
         } else {
           // Check for community image
@@ -98,7 +83,7 @@ export async function POST(request: NextRequest) {
 
           if (communityImage) {
             questionImageUrl = communityImage.image_url;
-            imageSource = 'community';
+            imageSource = 'community' as const;
             console.log(`📷 Found community image for question ${questionId}`);
           }
         }
