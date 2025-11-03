@@ -218,13 +218,8 @@ function AnswerSection({ question, subject, classId }: { question: Question | un
 
   if (!question) return null
 
-  // Define subjects that allow image uploads (scientific/mathematical)
-  const allowImageUpload = [
-    'mathematics', 'math', 'maths',
-    'physics', 'chemistry', 'biology',
-    'science', 'geometry', 'algebra',
-    'calculus', 'trigonometry', 'statistics'
-  ].some(allowed => subject.toLowerCase().includes(allowed))
+  // Allow image upload for all subjects
+  const allowImageUpload = true
 
   return (
     <div className="py-3 sm:py-4">

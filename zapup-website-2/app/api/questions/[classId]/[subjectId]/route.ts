@@ -17,32 +17,50 @@ export async function GET(
     const sectionId = searchParams.get('section')
 
     // Map frontend subject IDs to database subject names
-    const subjectNameMap: Record<string, string> = {
-      'accountancy': 'accounts',
-      'business-studies': 'business studies',
-      'environmental-studies': 'environmental studies',
-      'political-science': 'political science'
+    // Note: Try multiple variations since database might have inconsistent naming
+    const subjectNameMap: Record<string, string[]> = {
+      'accountancy': ['accountancy', 'accounts'],
+      'business-studies': ['business studies', 'business-studies'],
+      'environmental-studies': ['environmental studies', 'environmental-studies'],
+      'political-science': ['political science', 'political-science']
     }
 
-    // Use mapped name if exists, otherwise use the original ID
-    const subjectId = subjectNameMap[rawSubjectId.toLowerCase()] || rawSubjectId
+    // Get possible subject names to try
+    const possibleNames = subjectNameMap[rawSubjectId.toLowerCase()] || [rawSubjectId]
+    const subjectId = possibleNames[0] // Use first option as primary
 
     // If specific chapter and section (exercise) requested
     if (chapterId && sectionId) {
       console.log(`📚 Loading chapter: ${chapterId}, section: ${sectionId} for class ${classId}, subject ${subjectId}`)
 
       // Use new database structure: books -> chapters -> exercises -> questions
-      // Step 1: Get books for this class and subject
-      const { data: books, error: booksError } = await supabase
-        .from('books')
-        .select(`
-          id,
-          subjects!inner(id, name)
-        `)
-        .eq('class_level', classId)
-        .ilike('subjects.name', subjectId)
+      // Step 1: Get books for this class and subject (try all variations)
+      let books = null
+      let booksError = null
 
-      console.log(`📚 Found ${books?.length || 0} books for class ${classId}, subject ${subjectId}`)
+      for (const subjectName of possibleNames) {
+        console.log(`  Trying subject name for chapter load: "${subjectName}"`)
+        const result = await supabase
+          .from('books')
+          .select(`
+            id,
+            subjects!inner(id, name)
+          `)
+          .eq('class_level', classId)
+          .ilike('subjects.name', subjectName)
+
+        if (result.data && result.data.length > 0) {
+          books = result.data
+          console.log(`  ✅ Found ${books.length} books with subject "${subjectName}"`)
+          break
+        }
+      }
+
+      if (!books) {
+        books = []
+      }
+
+      console.log(`📚 Found ${books?.length || 0} books for class ${classId}`)
 
       if (booksError) {
         console.error('Error loading books:', booksError)
@@ -50,7 +68,7 @@ export async function GET(
       }
 
       if (!books || books.length === 0) {
-        console.log(`❌ No books found in database for class ${classId}, subject ${subjectId}`)
+        console.log(`❌ No books found in database for class ${classId}, subjects: ${possibleNames.join(', ')}`)
         return NextResponse.json({ error: 'No books found for this subject' }, { status: 404 })
       }
 
@@ -250,14 +268,35 @@ export async function GET(
     // Use RPC or get all unique chapters first to avoid 1000 row limit
 
     // Step 1: Get all unique exercise IDs with their info through books → subjects
-    const { data: books, error: booksError } = await supabase
-      .from('books')
-      .select(`
-        id,
-        subjects!inner(id, name)
-      `)
-      .eq('class_level', classId)
-      .ilike('subjects.name', subjectId)
+    console.log(`🔍 Looking for books: class_level=${classId}, subject=${subjectId}`)
+
+    // Try all possible subject name variations
+    let books = null
+    let booksError = null
+
+    for (const subjectName of possibleNames) {
+      console.log(`  Trying subject name: "${subjectName}"`)
+      const result = await supabase
+        .from('books')
+        .select(`
+          id,
+          subjects!inner(id, name)
+        `)
+        .eq('class_level', classId)
+        .ilike('subjects.name', subjectName)
+
+      if (result.data && result.data.length > 0) {
+        books = result.data
+        console.log(`  ✅ Found ${books.length} books with subject "${subjectName}"`)
+        break
+      }
+    }
+
+    if (!books) {
+      books = []
+    }
+
+    console.log(`📚 Total books found: ${books.length}`)
 
     if (booksError) {
       console.error('Error loading books:', booksError)
@@ -265,7 +304,22 @@ export async function GET(
     }
 
     if (!books || books.length === 0) {
-      return NextResponse.json({ chapters: [] })
+      console.log(`❌ No books found for class ${classId}, subjects: ${possibleNames.join(', ')}`)
+      // Try to find what subjects DO exist
+      const { data: allSubjects } = await supabase
+        .from('subjects')
+        .select('name')
+        .limit(20)
+
+      console.log('Available subjects in database:', allSubjects?.map(s => s.name).join(', '))
+
+      return NextResponse.json({
+        chapters: [],
+        debug: {
+          searchedFor: { classId, subjectId, triedNames: possibleNames },
+          availableSubjects: allSubjects?.map(s => s.name) || []
+        }
+      })
     }
 
     // Step 2: Get all chapters for these books
