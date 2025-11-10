@@ -83,7 +83,7 @@ export default function ContactPage() {
                     <h3 className="font-semibold text-gray-900">Address</h3>
                     <p className="text-gray-600">
                       Kolkata<br />
-                      West Bengal 700006, India
+                      West Bengal, India
                     </p>
                   </div>
                 </div>
