@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, ChevronDown, ChevronRight, Loader2, AlertCircle, Upload, X, Image as ImageIcon } from "lucide-react"
+import { ArrowLeft, ChevronDown, ChevronRight, Loader2, AlertCircle, Upload, X, Image as ImageIcon, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AppLayout } from "@/components/AppLayout"
 import { getSubjectDisplayName } from '@/lib/subjects'
@@ -31,6 +31,9 @@ function AnswerSection({ question, subject, classId }: { question: Question | un
   const [questionImage, setQuestionImage] = useState<any>(null)
   const [imageSource, setImageSource] = useState<'user' | 'community' | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [displayedAnswer, setDisplayedAnswer] = useState<string>('')
+  const [isAnimating, setIsAnimating] = useState(false)
+  const [animationIntervalId, setAnimationIntervalId] = useState<NodeJS.Timeout | null>(null)
 
   const generateAnswer = async () => {
     if (!question) return
@@ -77,7 +80,31 @@ function AnswerSection({ question, subject, classId }: { question: Question | un
       }
 
       const data = await response.json()
-      setAnswer(data.answer)
+      const fullAnswer = data.answer
+      setAnswer(fullAnswer)
+
+      // Clear any existing animation interval
+      if (animationIntervalId) {
+        clearInterval(animationIntervalId)
+      }
+
+      // Start waterfall/typewriter effect
+      setIsAnimating(true)
+      setDisplayedAnswer('')
+      let currentIndex = 0
+
+      const intervalId = setInterval(() => {
+        if (currentIndex < fullAnswer.length) {
+          setDisplayedAnswer(fullAnswer.slice(0, currentIndex + 1))
+          currentIndex++
+        } else {
+          clearInterval(intervalId)
+          setAnimationIntervalId(null)
+          setIsAnimating(false)
+        }
+      }, 20) // 20ms per character
+
+      setAnimationIntervalId(intervalId)
 
       // Increment usage for Explorer plan
       if (preferences.subscriptionType === 'explorer') {
@@ -112,12 +139,28 @@ function AnswerSection({ question, subject, classId }: { question: Question | un
 
   useEffect(() => {
     if (question) {
+      // Clear any running animation when switching questions
+      if (animationIntervalId) {
+        clearInterval(animationIntervalId)
+        setAnimationIntervalId(null)
+      }
       setAnswer(null)
       setError(null)
+      setIsAnimating(false)
+      setDisplayedAnswer('')
       fetchQuestionImage()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [question?.id])
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (animationIntervalId) {
+        clearInterval(animationIntervalId)
+      }
+    }
+  }, [animationIntervalId])
 
   const fetchQuestionImage = async () => {
     if (!question) return
@@ -353,7 +396,10 @@ function AnswerSection({ question, subject, classId }: { question: Question | un
       {answer && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4 overflow-x-auto">
           <div className="font-medium text-green-800 mb-2 text-sm sm:text-base">Answer:</div>
-          <div className="text-gray-700 whitespace-pre-wrap text-xs sm:text-sm break-words">{answer}</div>
+          <div className="text-gray-700 whitespace-pre-wrap text-xs sm:text-sm break-words">
+            {isAnimating ? displayedAnswer : answer}
+            {isAnimating && <span className="inline-block w-0.5 h-4 bg-green-600 animate-pulse ml-0.5" />}
+          </div>
         </div>
       )}
     </div>
@@ -404,6 +450,7 @@ export default function SubjectQuestionsPage() {
   const [selectedSection, setSelectedSection] = useState<string | null>(null)
   const [selectedQuestion, setSelectedQuestion] = useState<number | null>(null)
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set())
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
   // Loading states
   const [loadingSections, setLoadingSections] = useState(false)
@@ -573,9 +620,11 @@ export default function SubjectQuestionsPage() {
         </div>
 
         {/* Main Content */}
-        <div className="flex h-[calc(100vh-73px)]">
+        <div className="flex h-[calc(100vh-73px)] relative">
           {/* Left Sidebar - Chapters */}
-          <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+          <div className={`bg-white border-r border-gray-200 overflow-y-auto transition-all duration-300 ${
+            isSidebarCollapsed ? 'w-0 opacity-0' : 'w-80 opacity-100'
+          }`}>
             <div className="p-4 border-b border-gray-200 bg-gray-50">
               <h2 className="text-lg font-semibold text-gray-900">Chapters</h2>
             </div>
@@ -648,7 +697,9 @@ export default function SubjectQuestionsPage() {
 
           {/* Center Section - Questions */}
           <div className="flex-1 flex flex-col md:flex-row">
-            <div className="w-full md:w-1/2 bg-white border-b md:border-b-0 md:border-r border-gray-200 flex flex-col">
+            <div className={`bg-white border-b md:border-b-0 md:border-r border-gray-200 flex flex-col transition-all duration-300 ${
+              isSidebarCollapsed ? 'hidden' : 'w-full md:w-1/2'
+            }`}>
               <div className="p-3 sm:p-4 border-b border-gray-200 bg-blue-50">
                 <h3 className="text-base sm:text-lg font-semibold text-gray-900">
                   {selectedSection ?
@@ -681,7 +732,10 @@ export default function SubjectQuestionsPage() {
                     return (
                       <button
                         key={question.id}
-                        onClick={() => setSelectedQuestion(question.id)}
+                        onClick={() => {
+                          setSelectedQuestion(question.id)
+                          setIsSidebarCollapsed(true) // Auto-collapse sidebar when question is selected
+                        }}
                         className={`w-full text-left p-3 sm:p-4 rounded-lg border-2 mb-2 sm:mb-3 transition-all ${
                           selectedQuestion === question.id
                             ? 'border-blue-500 bg-blue-50'
@@ -710,9 +764,21 @@ export default function SubjectQuestionsPage() {
             </div>
 
             {/* Right Section - Answers */}
-            <div className="w-full md:w-1/2 bg-white flex flex-col">
-              <div className="p-3 sm:p-4 border-b border-gray-200 bg-green-50 flex-shrink-0">
+            <div className={`bg-white flex flex-col transition-all duration-300 ${
+              isSidebarCollapsed ? 'w-full' : 'w-full md:w-1/2'
+            }`}>
+              <div className="p-3 sm:p-4 border-b border-gray-200 bg-green-50 flex-shrink-0 flex items-center justify-between">
                 <h3 className="text-base sm:text-lg font-semibold text-gray-900">Answer & Solution</h3>
+                {/* Sidebar Toggle Button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                  className="hover:bg-green-100"
+                  title={isSidebarCollapsed ? 'Show Sidebar' : 'Hide Sidebar'}
+                >
+                  <Menu className="w-4 h-4" />
+                </Button>
               </div>
 
               <div className="flex-1 overflow-y-auto p-3 sm:p-4">

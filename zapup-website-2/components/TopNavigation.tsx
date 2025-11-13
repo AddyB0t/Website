@@ -4,7 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
-import { User, BookOpen, Brain, Settings, LogOut, Calendar, Bell, CreditCard, Image as ImageIcon } from 'lucide-react'
+import { User, BookOpen, Brain, Settings, LogOut, Calendar, Bell, CreditCard, Image as ImageIcon, MessageCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SignOutButton } from './SignOutButton'
 import { useUserPreferences } from '@/contexts/UserPreferencesContext'
@@ -41,6 +41,12 @@ export function TopNavigation() {
       title: 'My Images',
       href: '/my-images',
       icon: <ImageIcon className="w-4 h-4" />
+    },
+    {
+      id: 'ask',
+      title: 'Ask',
+      href: '/ask',
+      icon: <MessageCircle className="w-4 h-4" />
     },
     {
       id: 'pricing',

@@ -25,12 +25,12 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    const { question, book, chapter, exercise, questionId, classLevel } = await request.json();
+    const { question, book, chapter, exercise, questionId, classLevel, skipClassValidation } = await request.json();
 
     // Extract class level for validation
     const actualClassLevel = classLevel || extractClassLevel(book, questionId?.toString());
 
-    console.log(`🎯 Generating answer for Class ${actualClassLevel}:`, question.substring(0, 100) + '...');
+    console.log(`🎯 Generating answer${skipClassValidation ? ' (no class restrictions)' : ` for Class ${actualClassLevel}`}:`, question.substring(0, 100) + '...');
 
     // STEP 1: Check if a solution already exists in the database
     const { data: existingSolution, error: searchError } = await supabase
@@ -93,22 +93,35 @@ export async function POST(request: NextRequest) {
     }
 
     // STEP 4: Generate class-specific prompt
-    const classInfo = getClassInfo(actualClassLevel);
-    const maxSteps = getMaxStepsForClass(actualClassLevel);
-    const languageGuidelines = getLanguageGuidelinesForClass(actualClassLevel);
+    let prompt: string;
 
-    const prompt = generateClassSpecificPrompt({
-      question,
-      book: book || `Class ${actualClassLevel} Mathematics`,
-      chapter: chapter || 'Current Chapter',
-      exercise: exercise || 'Practice Questions',
-      classLevel: actualClassLevel,
-      classInfo,
-      maxSteps,
-      languageGuidelines,
-      hasImage: !!questionImageUrl,
-      imageSource
-    });
+    if (skipClassValidation) {
+      // Simple universal prompt without class restrictions
+      prompt = `Please provide a comprehensive, step-by-step solution to the following question:
+
+${question}
+
+${questionImageUrl ? `Note: An image has been uploaded that may contain diagrams, figures, or additional visual information needed to solve the problem. Reference the visual elements when explaining your solution.
+
+` : ''}Provide a clear, thorough explanation suitable for anyone learning this topic. Explain concepts and show all steps clearly.`;
+    } else {
+      const classInfo = getClassInfo(actualClassLevel);
+      const maxSteps = getMaxStepsForClass(actualClassLevel);
+      const languageGuidelines = getLanguageGuidelinesForClass(actualClassLevel);
+
+      prompt = generateClassSpecificPrompt({
+        question,
+        book: book || `Class ${actualClassLevel} Mathematics`,
+        chapter: chapter || 'Current Chapter',
+        exercise: exercise || 'Practice Questions',
+        classLevel: actualClassLevel,
+        classInfo,
+        maxSteps,
+        languageGuidelines,
+        hasImage: !!questionImageUrl,
+        imageSource
+      });
+    }
 
     // Generate answer with OpenRouter
     const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -123,7 +136,7 @@ export async function POST(request: NextRequest) {
         messages: [
           {
             role: 'system',
-            content: getSystemPromptForClass(actualClassLevel)
+            content: getSystemPromptForClass(actualClassLevel, skipClassValidation)
           },
           {
             role: 'user',
@@ -158,11 +171,11 @@ export async function POST(request: NextRequest) {
     }
 
     let answer = openRouterData.choices[0].message.content || "Sorry, I couldn't generate an answer for this question.";
-    
+
     // STEP 4: Post-process answer for quality and appropriateness
-    answer = postProcessAnswer(answer, actualClassLevel);
-    
-    console.log(`✅ Answer generated successfully for Class ${actualClassLevel} question ${questionId}`);
+    answer = postProcessAnswer(answer, actualClassLevel, skipClassValidation);
+
+    console.log(`✅ Answer generated successfully${skipClassValidation ? ' (no class restrictions)' : ` for Class ${actualClassLevel}`} question ${questionId}`);
 
     // STEP 5: Store the generated answer in the database for future use
     if (questionId) {
@@ -281,8 +294,29 @@ Provide a clear, step-by-step explanation or solution that a Class ${classLevel}
 }
 
 // Helper function to get system prompt based on class level
-function getSystemPromptForClass(classLevel: string): string {
+function getSystemPromptForClass(classLevel: string, skipClassValidation?: boolean): string {
   const classNum = parseInt(classLevel);
+
+  // Universal prompt when class validation is skipped
+  if (skipClassValidation) {
+    return `You are an expert academic tutor providing comprehensive educational support.
+
+Your expertise includes all subjects at all academic levels:
+- Mathematics: From basic arithmetic to advanced calculus, differential equations, linear algebra, and beyond
+- Science: Physics, Chemistry, Biology at all levels including university topics
+- Humanities: History, Political Science, Economics, Geography, Psychology, Sociology
+- Commerce: Accountancy, Business Studies, Economics, Finance
+- English: Literature Analysis, Advanced Writing, Language Studies
+- Engineering & Technology: Computer Science, Programming, Engineering fundamentals
+- All academic topics at any difficulty level
+
+IMPORTANT:
+- Do NOT ask follow-up questions
+- Provide complete, comprehensive solutions directly
+- Answer ALL questions thoroughly, regardless of topic difficulty or complexity
+- Explain concepts clearly with appropriate depth for the question's complexity
+- No restrictions based on educational level or age`;
+  }
 
   if (classNum <= 8) {
     return `You are an expert academic tutor helping a Class ${classNum} student.
@@ -334,25 +368,30 @@ IMPORTANT:
 }
 
 // Helper function to post-process answers
-function postProcessAnswer(answer: string, classLevel: string): string {
+function postProcessAnswer(answer: string, classLevel: string, skipClassValidation?: boolean): string {
+  // Skip all restrictions when class validation is disabled
+  if (skipClassValidation) {
+    return answer;
+  }
+
   // Remove any inappropriate content that might have slipped through
   const inappropriateTerms = [
     'regression coefficient', 'correlation analysis', 'standard deviation',
     'hypothesis testing', 'p-value', 'chi-square', 'ANOVA'
   ];
-  
+
   const classNum = parseInt(classLevel);
-  
+
   for (const term of inappropriateTerms) {
     if (answer.toLowerCase().includes(term.toLowerCase()) && classNum < 11) {
       return `I notice this question involves advanced statistical concepts (${term}) that are typically covered in Classes 11-12. For Class ${classLevel}, I'd recommend focusing on basic data handling and simple statistics. Please consult your teacher for guidance on this specific topic.`;
     }
   }
-  
+
   // Add a helpful note for elementary classes
   if (classNum <= 8 && answer.length > 800) {
     answer = answer.substring(0, 600) + '...\n\nNote: If you need more detailed steps, please ask your teacher for additional help!';
   }
-  
+
   return answer;
 }
