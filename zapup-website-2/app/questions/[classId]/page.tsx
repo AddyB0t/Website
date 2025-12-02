@@ -41,6 +41,13 @@ function QuestionClassPageContent() {
   // Get stream from URL params
   const streamFromUrl = searchParams.get('stream')
 
+  // Re-initialize when URL stream parameter changes
+  useEffect(() => {
+    if (streamFromUrl && streamFromUrl !== selectedStream) {
+      setSelectedStream(streamFromUrl)
+    }
+  }, [streamFromUrl])
+
   useEffect(() => {
     initializePage()
   }, [classNumber, selectedStream])

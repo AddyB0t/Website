@@ -81,13 +81,14 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
 
         console.log('Creating initial preferences:', initialPreferences)
 
-        // Save to database
+        // Save to database - include subscription_type to ensure new users get genius_plus
         await userPreferencesService.upsertUserPreferences({
           user_id: user.id,
           first_name: user.firstName || '',
           last_name: user.lastName || '',
           email: user.primaryEmailAddress?.emailAddress || '',
           profile_complete: false,
+          subscription_type: 'genius_plus',
         } as any)
       }
     } catch (error) {
@@ -279,7 +280,7 @@ const dbToContext = (dbPreferences: any): UserPreferences => ({
   email: dbPreferences.email || '',
   profilePictureUrl: dbPreferences.profile_picture_url || '',
   isComplete: dbPreferences.profile_complete || false,
-  subscriptionType: (dbPreferences.subscription_type as SubscriptionType) || 'explorer',
+  subscriptionType: (dbPreferences.subscription_type as SubscriptionType) || 'genius_plus',
 });
 
 // When mapping from context to DB:

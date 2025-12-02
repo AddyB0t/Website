@@ -445,9 +445,10 @@ export default function SubjectQuestionsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
-  // State for user selections
+  // State for user selections - use combined key for section to avoid conflicts across chapters
   const [selectedChapter, setSelectedChapter] = useState<string | null>(null)
   const [selectedSection, setSelectedSection] = useState<string | null>(null)
+  const [selectedSectionKey, setSelectedSectionKey] = useState<string | null>(null) // Format: "chapterId:sectionId"
   const [selectedQuestion, setSelectedQuestion] = useState<number | null>(null)
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set())
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
@@ -509,6 +510,7 @@ export default function SubjectQuestionsPage() {
           if (firstChapter.sections && firstChapter.sections.length > 0) {
             const firstSection = firstChapter.sections[0]
             setSelectedSection(firstSection.id)
+            setSelectedSectionKey(`${firstChapter.id}:${firstSection.id}`)
             await loadQuestions(firstChapter.id, firstSection.id)
           }
         }
@@ -535,15 +537,26 @@ export default function SubjectQuestionsPage() {
   }
 
   const handleSectionSelect = (chapterId: string, sectionId: string) => {
+    setSelectedChapter(chapterId)
     setSelectedSection(sectionId)
+    setSelectedSectionKey(`${chapterId}:${sectionId}`) // Unique key combining chapter and section
     loadQuestions(chapterId, sectionId)
     setSelectedQuestion(null) // Reset question selection
   }
 
-  // Get current chapter data
+  // Get current chapter data - use selectedChapter to ensure we're looking in the right chapter
   const currentChapter = chapters.find(ch => ch.id === selectedChapter)
   const currentSection = currentChapter?.sections.find(s => s.id === selectedSection)
+  const currentSectionIndex = currentChapter?.sections.findIndex(s => s.id === selectedSection) ?? -1
   const currentQuestion = questions.find(q => q.id === selectedQuestion)
+
+  // Calculate the display title for the current section (matching sidebar logic)
+  const getCurrentSectionDisplayTitle = () => {
+    if (!currentSection || currentSectionIndex < 0) return 'Section Questions'
+    const displayExerciseNumber = currentSectionIndex + 1
+    const exerciseName = currentSection.title.replace(/^Exercise\s+\d+\s*-?\s*/i, '')
+    return `Exercise ${displayExerciseNumber} - ${exerciseName}`
+  }
   
   // Add display number to current question
   const currentQuestionWithDisplay = currentQuestion ? {
@@ -671,13 +684,15 @@ export default function SubjectQuestionsPage() {
                             // E.g., "Exercise 5 - Programming Questions" -> "Programming Questions"
                             const exerciseName = section.title.replace(/^Exercise\s+\d+\s*-?\s*/i, '')
                             const displayTitle = `Exercise ${displayExerciseNumber} - ${exerciseName}`
+                            // Create unique key for this section
+                            const sectionKey = `${chapter.id}:${section.id}`
 
                             return (
                               <button
                                 key={section.id}
                                 onClick={() => handleSectionSelect(chapter.id, section.id)}
                                 className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                                  selectedSection === section.id
+                                  selectedSectionKey === sectionKey
                                     ? 'bg-blue-50 text-blue-700 border border-blue-200'
                                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                 }`}
@@ -702,10 +717,7 @@ export default function SubjectQuestionsPage() {
             }`}>
               <div className="p-3 sm:p-4 border-b border-gray-200 bg-blue-50">
                 <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                  {selectedSection ?
-                    currentChapter?.sections.find(s => s.id === selectedSection)?.title || 'Section Questions' :
-                    'Section Questions'
-                  }
+                  {getCurrentSectionDisplayTitle()}
                 </h3>
               </div>
 
